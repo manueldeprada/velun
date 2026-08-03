@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    System Extension target. Signed with Developer ID Application for both
+    Debug and Release (Apple Development cannot sign system extensions). See
+    App/velun.entitlements for the rationale.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.networking.networkextension</key>
+	<array>
+		<string>packet-tunnel-provider-systemextension</string>
+	</array>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.manueldeprada.velun</string>
+	</array>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<!--
+	    WireGuard's Go core (net.ListenUDP via wireguard-go) binds a local
+	    UDP socket to send packets to the peer endpoint. Even though it's
+	    an outgoing connection, Go's stack does an explicit bind() which
+	    the sandbox blocks without network.server. Symptom without it:
+	    "[wg] Unable to update bind: listen udp4 :0: bind: operation not
+	    permitted" — tunnel reports connected, but no traffic flows.
+	-->
+	<key>com.apple.security.network.server</key>
+	<true/>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.manueldeprada.velun.shared</string>
+	</array>
+</dict>
+</plist>

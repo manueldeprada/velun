@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+    macOS System Extensions can only be signed with a Developer ID Application
+    certificate (Apple Development is rejected by Gatekeeper, even when the
+    bundle is in /Applications). The same Direct provisioning profile is
+    therefore used for both Debug and Release builds, and the -systemextension
+    flavor of the NE entitlement is correct for both configurations.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.developer.networking.networkextension</key>
+	<array>
+		<string>packet-tunnel-provider-systemextension</string>
+	</array>
+	<key>com.apple.developer.system-extension.install</key>
+	<true/>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>group.com.manueldeprada.velun</string>
+	</array>
+	<!-- Resource-access entitlement for Hardened Runtime: required for
+	     AVFoundation camera capture (the TOTP-QR scanner sheet). NSCameraUsage-
+	     Description in Info.plist still drives the TCC consent prompt; this
+	     entitlement just tells the Hardened Runtime not to block the call. -->
+	<key>com.apple.security.device.camera</key>
+	<true/>
+	<key>com.apple.security.network.client</key>
+	<true/>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.manueldeprada.velun.shared</string>
+	</array>
+</dict>
+</plist>

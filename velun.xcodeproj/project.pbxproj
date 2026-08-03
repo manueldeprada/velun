@@ -1,0 +1,835 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		AA060001000000000000001 /* VelunApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040001000000000000001 /* VelunApp.swift */; };
+		AA060002000000000000001 /* MenuBarManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040002000000000000001 /* MenuBarManager.swift */; };
+		AA060003000000000000001 /* ConfigurationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040003000000000000001 /* ConfigurationView.swift */; };
+		AA060004000000000000001 /* VPNManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040004000000000000001 /* VPNManager.swift */; };
+		AA060005000000000000001 /* TunnelConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA050005000000000000001 /* TunnelConfiguration.swift */; };
+		AA060007000000000000001 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040007000000000000001 /* KeychainHelper.swift */; };
+		AA060008000000000000001 /* SystemExtensionInstaller.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040008000000000000001 /* SystemExtensionInstaller.swift */; };
+		AA060009000000000000001 /* TunnelExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040009000000000000001 /* TunnelExport.swift */; };
+		AA0600A0000000000000001 /* VPNConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400A0000000000000001 /* VPNConfig.swift */; };
+		AA0600A1000000000000001 /* UpdaterManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400A1000000000000001 /* UpdaterManager.swift */; };
+		AA0600A2000000000000001 /* AboutScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400A2000000000000001 /* AboutScreen.swift */; };
+		AA0600A3000000000000001 /* AboutScreenUI.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400A3000000000000001 /* AboutScreenUI.swift */; };
+		AA0600A4000000000000001 /* StatusBroadcaster.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400A4000000000000001 /* StatusBroadcaster.swift */; };
+		AA0600A5000000000000001 /* URLActionHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400A5000000000000001 /* URLActionHandler.swift */; };
+		AA0600A6000000000000001 /* LaunchAtLoginManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400A6000000000000001 /* LaunchAtLoginManager.swift */; };
+		AA0600A7000000000000001 /* OTPSecretImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400A7000000000000001 /* OTPSecretImporter.swift */; };
+		AA0600A8000000000000001 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400A8000000000000001 /* QRScannerView.swift */; };
+		AA0600A9000000000000001 /* NetworkPathWatcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400A9000000000000001 /* NetworkPathWatcher.swift */; };
+		AA0600B0000000000000001 /* SystemProfileImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400B0000000000000001 /* SystemProfileImporter.swift */; };
+		AA0600B1000000000000001 /* ServerAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400B1000000000000001 /* ServerAddress.swift */; };
+		AA0600B2000000000000001 /* SSOWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400B2000000000000001 /* SSOWebView.swift */; };
+		AA0600B3000000000000001 /* DomainRouteResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400B3000000000000001 /* DomainRouteResolver.swift */; };
+		AA060B01000000000000001 /* IPv4Packet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040B01000000000000001 /* IPv4Packet.swift */; };
+		AA060B01000000000000090 /* IPv6Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF10000000000000000090 /* IPv6Support.swift */; };
+		AA060B02000000000000001 /* UserspaceTCP.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040B02000000000000001 /* UserspaceTCP.swift */; };
+		AA060B03000000000000001 /* IPRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040B03000000000000001 /* IPRouter.swift */; };
+		AA060B04000000000000001 /* PortForwarder.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040B04000000000000001 /* PortForwarder.swift */; };
+		AA060B05000000000000001 /* ScriptedRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040B05000000000000001 /* ScriptedRunner.swift */; };
+		AA060B06000000000000001 /* CommandsManagerSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040B06000000000000001 /* CommandsManagerSheet.swift */; };
+		AA060B07000000000000001 /* CommandRunSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040B07000000000000001 /* CommandRunSheet.swift */; };
+		AA060B10000000000000001 /* CSTPTunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA050003000000000000001 /* CSTPTunnel.swift */; };
+		AA060B11000000000000001 /* VPNAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA050002000000000000001 /* VPNAuth.swift */; };
+		AA060B12000000000000001 /* FortinetTunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0500A0000000000000001 /* FortinetTunnel.swift */; };
+		AA060B13000000000000001 /* GPTunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0500A1000000000000001 /* GPTunnel.swift */; };
+		AA060B14000000000000001 /* TOTPGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA050004000000000000001 /* TOTPGenerator.swift */; };
+		AA060C01000000000000001 /* Changelog.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040C01000000000000001 /* Changelog.swift */; };
+		AA064001000000000000001 /* VPNBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA044001000000000000001 /* VPNBackend.swift */; };
+		AA070002000000000000001 /* VPNAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA050002000000000000001 /* VPNAuth.swift */; };
+		AA070003000000000000001 /* CSTPTunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA050003000000000000001 /* CSTPTunnel.swift */; };
+		AA070004000000000000001 /* TOTPGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA050004000000000000001 /* TOTPGenerator.swift */; };
+		AA070005000000000000001 /* TunnelConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA050005000000000000001 /* TunnelConfiguration.swift */; };
+		AA070008000000000000001 /* main.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA050008000000000000001 /* main.swift */; };
+		AA070009000000000000001 /* WireGuardQuickConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA050009000000000000001 /* WireGuardQuickConfig.swift */; };
+		AA0700A0000000000000001 /* FortinetTunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0500A0000000000000001 /* FortinetTunnel.swift */; };
+		AA0700A1000000000000001 /* GPTunnel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0500A1000000000000001 /* GPTunnel.swift */; };
+		AA0700A2000000000000001 /* RouteAutoDetect.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0500A2000000000000001 /* RouteAutoDetect.swift */; };
+		AA0700A3000000000000001 /* ReconnectController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0500A3000000000000001 /* ReconnectController.swift */; };
+		AA0700A4000000000000001 /* DnsSuffixAutoDetect.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0500A4000000000000001 /* DnsSuffixAutoDetect.swift */; };
+		AA080001000000000000001 /* PacketTunnel.systemextension in Embed System Extensions */ = {isa = PBXBuildFile; fileRef = DD020000000000000000001 /* PacketTunnel.systemextension */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		AAD20000000000000000001 /* DTLS.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD10000000000000000001 /* DTLS.swift */; };
+		AAD20000000000000000002 /* DTLSConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD10000000000000000002 /* DTLSConnection.swift */; };
+		AAD30000000000000000001 /* DTLS.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD10000000000000000001 /* DTLS.swift */; };
+		AAD30000000000000000002 /* DTLSConnection.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD10000000000000000002 /* DTLSConnection.swift */; };
+		AAF20000000000000000001 /* UnifiedIPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF10000000000000000001 /* UnifiedIPC.swift */; };
+		AAF20000000000000000005 /* UnifiedNEController.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF10000000000000000005 /* UnifiedNEController.swift */; };
+		AAF20000000000000000006 /* UnifiedNEBackend.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF10000000000000000006 /* UnifiedNEBackend.swift */; };
+		AAF30000000000000000001 /* UnifiedIPC.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF10000000000000000001 /* UnifiedIPC.swift */; };
+		AAF30000000000000000002 /* PacketNAT.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF10000000000000000002 /* PacketNAT.swift */; };
+		AAF30000000000000000090 /* IPv6Support.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF10000000000000000090 /* IPv6Support.swift */; };
+		AAF30000000000000000003 /* UnifiedRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF10000000000000000003 /* UnifiedRouter.swift */; };
+		AAF30000000000000000004 /* UnifiedTunnelProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF10000000000000000004 /* UnifiedTunnelProvider.swift */; };
+		AAF30000000000000000007 /* IPv4Packet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040B01000000000000001 /* IPv4Packet.swift */; };
+		AAF30000000000000000008 /* UnifiedDNSProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF10000000000000000007 /* UnifiedDNSProxy.swift */; };
+		AAF3000000000000000000F /* FlowKeeper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAF1000000000000000000F /* FlowKeeper.swift */; };
+		ACA2EBF92F9C49F60043A48A /* velun.icns in Resources */ = {isa = PBXBuildFile; fileRef = ACA2EBF82F9C49F60043A48A /* velun.icns */; };
+		ACA2EBFA2F9C49F60043A48A /* velun.icns in Resources */ = {isa = PBXBuildFile; fileRef = ACA2EBF82F9C49F60043A48A /* velun.icns */; };
+		ACA2EC102F9C49F60043A48A /* connected.png in Resources */ = {isa = PBXBuildFile; fileRef = ACA2EC0E2F9C49F60043A48A /* connected.png */; };
+		ACA2EC112F9C49F60043A48A /* disconnected.png in Resources */ = {isa = PBXBuildFile; fileRef = ACA2EC0F2F9C49F60043A48A /* disconnected.png */; };
+		ACA2ED032F9D612A0043A48A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = ACA2ED012F9D612A0043A48A /* Sparkle */; };
+		ACA2ED042F9D612A0043A48A /* WireGuardKit in Frameworks */ = {isa = PBXBuildFile; productRef = ACA2ED022F9D612A0043A48A /* WireGuardKit */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		CA010000000000000000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA010000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BB020000000000000000001;
+			remoteInfo = PacketTunnel;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BA040000000000000000001 /* Embed System Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = Contents/Library/SystemExtensions;
+			dstSubfolderSpec = 1;
+			files = (
+				AA080001000000000000001 /* PacketTunnel.systemextension in Embed System Extensions */,
+			);
+			name = "Embed System Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		AA040001000000000000001 /* VelunApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VelunApp.swift; sourceTree = "<group>"; };
+		AA040002000000000000001 /* MenuBarManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarManager.swift; sourceTree = "<group>"; };
+		AA040003000000000000001 /* ConfigurationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConfigurationView.swift; sourceTree = "<group>"; };
+		AA040004000000000000001 /* VPNManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VPNManager.swift; sourceTree = "<group>"; };
+		AA040005000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA040006000000000000001 /* velun.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = velun.entitlements; sourceTree = "<group>"; };
+		AA040007000000000000001 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		AA040008000000000000001 /* SystemExtensionInstaller.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemExtensionInstaller.swift; sourceTree = "<group>"; };
+		AA040009000000000000001 /* TunnelExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelExport.swift; sourceTree = "<group>"; };
+		AA0400A0000000000000001 /* VPNConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VPNConfig.swift; sourceTree = "<group>"; };
+		AA0400A1000000000000001 /* UpdaterManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdaterManager.swift; sourceTree = "<group>"; };
+		AA0400A2000000000000001 /* AboutScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutScreen.swift; sourceTree = "<group>"; };
+		AA0400A3000000000000001 /* AboutScreenUI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutScreenUI.swift; sourceTree = "<group>"; };
+		AA0400A4000000000000001 /* StatusBroadcaster.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBroadcaster.swift; sourceTree = "<group>"; };
+		AA0400A5000000000000001 /* URLActionHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLActionHandler.swift; sourceTree = "<group>"; };
+		AA0400A6000000000000001 /* LaunchAtLoginManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAtLoginManager.swift; sourceTree = "<group>"; };
+		AA0400A7000000000000001 /* OTPSecretImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OTPSecretImporter.swift; sourceTree = "<group>"; };
+		AA0400A8000000000000001 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		AA0400A9000000000000001 /* NetworkPathWatcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkPathWatcher.swift; sourceTree = "<group>"; };
+		AA0400B0000000000000001 /* SystemProfileImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemProfileImporter.swift; sourceTree = "<group>"; };
+		AA0400B1000000000000001 /* ServerAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerAddress.swift; sourceTree = "<group>"; };
+		AA0400B2000000000000001 /* SSOWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOWebView.swift; sourceTree = "<group>"; };
+		AA0400B3000000000000001 /* DomainRouteResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainRouteResolver.swift; sourceTree = "<group>"; };
+		AA040B01000000000000001 /* IPv4Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPv4Packet.swift; sourceTree = "<group>"; };
+		AA040B02000000000000001 /* UserspaceTCP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserspaceTCP.swift; sourceTree = "<group>"; };
+		AA040B03000000000000001 /* IPRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPRouter.swift; sourceTree = "<group>"; };
+		AA040B04000000000000001 /* PortForwarder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortForwarder.swift; sourceTree = "<group>"; };
+		AA040B05000000000000001 /* ScriptedRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScriptedRunner.swift; sourceTree = "<group>"; };
+		AA040B06000000000000001 /* CommandsManagerSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandsManagerSheet.swift; sourceTree = "<group>"; };
+		AA040B07000000000000001 /* CommandRunSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandRunSheet.swift; sourceTree = "<group>"; };
+		AA040C01000000000000001 /* Changelog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Changelog.swift; sourceTree = "<group>"; };
+		AA044001000000000000001 /* VPNBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VPNBackend.swift; sourceTree = "<group>"; };
+		AA050002000000000000001 /* VPNAuth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VPNAuth.swift; sourceTree = "<group>"; };
+		AA050003000000000000001 /* CSTPTunnel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CSTPTunnel.swift; sourceTree = "<group>"; };
+		AA050004000000000000001 /* TOTPGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TOTPGenerator.swift; sourceTree = "<group>"; };
+		AA050005000000000000001 /* TunnelConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunnelConfiguration.swift; sourceTree = "<group>"; };
+		AA050006000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		AA050007000000000000001 /* PacketTunnel.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PacketTunnel.entitlements; sourceTree = "<group>"; };
+		AA050008000000000000001 /* main.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = main.swift; sourceTree = "<group>"; };
+		AA050009000000000000001 /* WireGuardQuickConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WireGuardQuickConfig.swift; sourceTree = "<group>"; };
+		AA0500A0000000000000001 /* FortinetTunnel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FortinetTunnel.swift; sourceTree = "<group>"; };
+		AA0500A1000000000000001 /* GPTunnel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPTunnel.swift; sourceTree = "<group>"; };
+		AA0500A2000000000000001 /* RouteAutoDetect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteAutoDetect.swift; sourceTree = "<group>"; };
+		AA0500A3000000000000001 /* ReconnectController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReconnectController.swift; sourceTree = "<group>"; };
+		AA0500A4000000000000001 /* DnsSuffixAutoDetect.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DnsSuffixAutoDetect.swift; sourceTree = "<group>"; };
+		AAD10000000000000000001 /* DTLS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTLS.swift; sourceTree = "<group>"; };
+		AAD10000000000000000002 /* DTLSConnection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTLSConnection.swift; sourceTree = "<group>"; };
+		AAF10000000000000000001 /* UnifiedIPC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedIPC.swift; sourceTree = "<group>"; };
+		AAF10000000000000000002 /* PacketNAT.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PacketNAT.swift; sourceTree = "<group>"; };
+		AAF10000000000000000090 /* IPv6Support.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPv6Support.swift; sourceTree = "<group>"; };
+		AAF10000000000000000003 /* UnifiedRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedRouter.swift; sourceTree = "<group>"; };
+		AAF10000000000000000004 /* UnifiedTunnelProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedTunnelProvider.swift; sourceTree = "<group>"; };
+		AAF10000000000000000005 /* UnifiedNEController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedNEController.swift; sourceTree = "<group>"; };
+		AAF10000000000000000006 /* UnifiedNEBackend.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedNEBackend.swift; sourceTree = "<group>"; };
+		AAF10000000000000000007 /* UnifiedDNSProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedDNSProxy.swift; sourceTree = "<group>"; };
+		AAF1000000000000000000F /* FlowKeeper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowKeeper.swift; sourceTree = "<group>"; };
+		ACA2EBF82F9C49F60043A48A /* velun.icns */ = {isa = PBXFileReference; lastKnownFileType = image.icns; path = velun.icns; sourceTree = "<group>"; };
+		ACA2EC052F9C4EC10043A48A /* velun.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = velun.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		ACA2EC0E2F9C49F60043A48A /* connected.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = connected.png; sourceTree = "<group>"; };
+		ACA2EC0F2F9C49F60043A48A /* disconnected.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = disconnected.png; sourceTree = "<group>"; };
+		DD020000000000000000001 /* PacketTunnel.systemextension */ = {isa = PBXFileReference; explicitFileType = "wrapper.system-extension"; includeInIndex = 0; name = PacketTunnel.systemextension; path = com.manueldeprada.velun.PacketTunnel.systemextension; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		BA030000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ACA2ED032F9D612A0043A48A /* Sparkle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE030000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ACA2ED042F9D612A0043A48A /* WireGuardKit in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		CC010000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				CC030000000000000000001 /* App */,
+				CC040000000000000000001 /* Tunnel */,
+				CC020000000000000000001 /* Products */,
+				ACA2EBF82F9C49F60043A48A /* velun.icns */,
+				ACA2EC0E2F9C49F60043A48A /* connected.png */,
+				ACA2EC0F2F9C49F60043A48A /* disconnected.png */,
+			);
+			sourceTree = "<group>";
+		};
+		CC020000000000000000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				ACA2EC052F9C4EC10043A48A /* velun.app */,
+				DD020000000000000000001 /* PacketTunnel.systemextension */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		CC030000000000000000001 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				AA040001000000000000001 /* VelunApp.swift */,
+				AA040002000000000000001 /* MenuBarManager.swift */,
+				AA040003000000000000001 /* ConfigurationView.swift */,
+				AA040004000000000000001 /* VPNManager.swift */,
+				AA0400A0000000000000001 /* VPNConfig.swift */,
+				AA040007000000000000001 /* KeychainHelper.swift */,
+				AA040008000000000000001 /* SystemExtensionInstaller.swift */,
+				AA040009000000000000001 /* TunnelExport.swift */,
+				AA0400B0000000000000001 /* SystemProfileImporter.swift */,
+				AA0400B1000000000000001 /* ServerAddress.swift */,
+				AA0400B2000000000000001 /* SSOWebView.swift */,
+				AA0400B3000000000000001 /* DomainRouteResolver.swift */,
+				AA0400A1000000000000001 /* UpdaterManager.swift */,
+				AA0400A2000000000000001 /* AboutScreen.swift */,
+				AA0400A3000000000000001 /* AboutScreenUI.swift */,
+				AA0400A4000000000000001 /* StatusBroadcaster.swift */,
+				AA0400A5000000000000001 /* URLActionHandler.swift */,
+				AA0400A6000000000000001 /* LaunchAtLoginManager.swift */,
+				AA0400A7000000000000001 /* OTPSecretImporter.swift */,
+				AA0400A8000000000000001 /* QRScannerView.swift */,
+				AA0400A9000000000000001 /* NetworkPathWatcher.swift */,
+				AA040C01000000000000001 /* Changelog.swift */,
+				CC050000000000000000001 /* Backends */,
+				CC060000000000000000001 /* ScriptedNet */,
+				AA040005000000000000001 /* Info.plist */,
+				AA040006000000000000001 /* velun.entitlements */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		CC040000000000000000001 /* Tunnel */ = {
+			isa = PBXGroup;
+			children = (
+				AA050002000000000000001 /* VPNAuth.swift */,
+				AA050003000000000000001 /* CSTPTunnel.swift */,
+				AAD10000000000000000001 /* DTLS.swift */,
+				AAD10000000000000000002 /* DTLSConnection.swift */,
+				AA050004000000000000001 /* TOTPGenerator.swift */,
+				AA050005000000000000001 /* TunnelConfiguration.swift */,
+				AA050009000000000000001 /* WireGuardQuickConfig.swift */,
+				AA0500A0000000000000001 /* FortinetTunnel.swift */,
+				AA0500A1000000000000001 /* GPTunnel.swift */,
+				AA0500A2000000000000001 /* RouteAutoDetect.swift */,
+				AA0500A3000000000000001 /* ReconnectController.swift */,
+				AA0500A4000000000000001 /* DnsSuffixAutoDetect.swift */,
+				AAF10000000000000000001 /* UnifiedIPC.swift */,
+				AAF10000000000000000002 /* PacketNAT.swift */,
+				AAF10000000000000000090 /* IPv6Support.swift */,
+				AAF10000000000000000003 /* UnifiedRouter.swift */,
+				AAF1000000000000000000F /* FlowKeeper.swift */,
+				AAF10000000000000000004 /* UnifiedTunnelProvider.swift */,
+				AAF10000000000000000007 /* UnifiedDNSProxy.swift */,
+				AA050008000000000000001 /* main.swift */,
+				AA050006000000000000001 /* Info.plist */,
+				AA050007000000000000001 /* PacketTunnel.entitlements */,
+			);
+			path = Tunnel;
+			sourceTree = "<group>";
+		};
+		CC050000000000000000001 /* Backends */ = {
+			isa = PBXGroup;
+			children = (
+				AA044001000000000000001 /* VPNBackend.swift */,
+				AAF10000000000000000005 /* UnifiedNEController.swift */,
+				AAF10000000000000000006 /* UnifiedNEBackend.swift */,
+			);
+			path = Backends;
+			sourceTree = "<group>";
+		};
+		CC060000000000000000001 /* ScriptedNet */ = {
+			isa = PBXGroup;
+			children = (
+				AA040B01000000000000001 /* IPv4Packet.swift */,
+				AA040B02000000000000001 /* UserspaceTCP.swift */,
+				AA040B03000000000000001 /* IPRouter.swift */,
+				AA040B04000000000000001 /* PortForwarder.swift */,
+				AA040B05000000000000001 /* ScriptedRunner.swift */,
+				AA040B06000000000000001 /* CommandsManagerSheet.swift */,
+				AA040B07000000000000001 /* CommandRunSheet.swift */,
+			);
+			path = ScriptedNet;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		BB010000000000000000001 /* velun */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB030000000000000000001 /* Build configuration list for PBXNativeTarget "velun" */;
+			buildPhases = (
+				BA010000000000000000001 /* Sources */,
+				BA020000000000000000001 /* Resources */,
+				BA030000000000000000001 /* Frameworks */,
+				BA040000000000000000001 /* Embed System Extensions */,
+				BA050000000000000000001 /* Re-sign Sparkle nested binaries */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CA020000000000000000001 /* PBXTargetDependency */,
+			);
+			name = velun;
+			packageProductDependencies = (
+				ACA2ED012F9D612A0043A48A /* Sparkle */,
+			);
+			productName = velun;
+			productReference = ACA2EC052F9C4EC10043A48A /* velun.app */;
+			productType = "com.apple.product-type.application";
+		};
+		BB020000000000000000001 /* PacketTunnel */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BB060000000000000000001 /* Build configuration list for PBXNativeTarget "PacketTunnel" */;
+			buildPhases = (
+				BE040000000000000000001 /* Build WireGuardKitGo */,
+				BE010000000000000000001 /* Sources */,
+				BE020000000000000000001 /* Resources */,
+				BE030000000000000000001 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PacketTunnel;
+			packageProductDependencies = (
+				ACA2ED022F9D612A0043A48A /* WireGuardKit */,
+			);
+			productName = PacketTunnel;
+			productReference = DD020000000000000000001 /* PacketTunnel.systemextension */;
+			productType = "com.apple.product-type.system-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		AA010000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					BB010000000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+					BB020000000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = AA020000000000000000001 /* Build configuration list for PBXProject "velun" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = CC010000000000000000001;
+			packageReferences = (
+				ACA2EC0B2F9D612A0043A48A /* XCRemoteSwiftPackageReference "Sparkle" */,
+				ACA2EC0C2F9D62470043A48A /* XCLocalSwiftPackageReference "vendor/wireguard-apple" */,
+			);
+			productRefGroup = CC020000000000000000001 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BB010000000000000000001 /* velun */,
+				BB020000000000000000001 /* PacketTunnel */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		BA020000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ACA2EBF92F9C49F60043A48A /* velun.icns in Resources */,
+				ACA2EC102F9C49F60043A48A /* connected.png in Resources */,
+				ACA2EC112F9C49F60043A48A /* disconnected.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE020000000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ACA2EBFA2F9C49F60043A48A /* velun.icns in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		BA050000000000000000001 /* Re-sign Sparkle nested binaries */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Re-sign Sparkle nested binaries";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Sparkle ships its nested helpers (Updater.app, Autoupdate, Downloader.xpc,\n# Installer.xpc) with adhoc signatures. Notarization rejects those, so we\n# re-sign them with our Developer ID + secure timestamp + Hardened Runtime\n# before the implicit app-signing step seals everything.\nset -e\n\nif [ \"${CODE_SIGNING_ALLOWED}\" != \"YES\" ]; then\n    echo \"Code signing disabled — skipping Sparkle re-sign\"\n    exit 0\nfi\n\nAPP=\"${BUILT_PRODUCTS_DIR}/${WRAPPER_NAME}\"\nSPARKLE=\"${APP}/Contents/Frameworks/Sparkle.framework\"\nif [ ! -d \"${SPARKLE}\" ]; then\n    echo \"Sparkle.framework not embedded — nothing to re-sign\"\n    exit 0\nfi\n\nIDENTITY=\"${EXPANDED_CODE_SIGN_IDENTITY:-$CODE_SIGN_IDENTITY}\"\nVDIR=\"${SPARKLE}/Versions/B\"\n\nfor target in \\\n    \"${VDIR}/XPCServices/Downloader.xpc\" \\\n    \"${VDIR}/XPCServices/Installer.xpc\" \\\n    \"${VDIR}/Updater.app\" \\\n    \"${VDIR}/Autoupdate\" \\\n    \"${SPARKLE}\"; do\n    if [ -e \"${target}\" ]; then\n        echo \"Re-signing ${target}\"\n        codesign --force --options runtime --timestamp --sign \"${IDENTITY}\" \"${target}\"\n    fi\ndone\n";
+		};
+		BE040000000000000000001 /* Build WireGuardKitGo */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build WireGuardKitGo";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(CONFIGURATION_BUILD_DIR)/libwg-go.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -e\n# wireguard-apple is vendored at ${SRCROOT}/vendor/wireguard-apple/ and\n# referenced as a local SPM package — see XCLocalSwiftPackageReference\n# in this pbxproj. The Go bridge lives in Sources/WireGuardKitGo and is\n# built via the upstream Makefile (which produces libwg-go.a for the\n# requested ARCHS in CONFIGURATION_BUILD_DIR, where Xcode then links it).\nWG_KIT_PATH=\"${SRCROOT}/vendor/wireguard-apple\"\nif [ ! -d \"$WG_KIT_PATH/Sources/WireGuardKitGo\" ]; then\n  echo \"warning: WireGuardKitGo not found at $WG_KIT_PATH — skipping\"\n  exit 0\nfi\nexport PATH=\"/opt/homebrew/bin:/usr/local/bin:$PATH\"\nexec make -C \"$WG_KIT_PATH/Sources/WireGuardKitGo\" \\\n  PLATFORM_NAME=\"$PLATFORM_NAME\" \\\n  ARCHS=\"$ARCHS\" \\\n  CONFIGURATION_BUILD_DIR=\"$CONFIGURATION_BUILD_DIR\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		BA010000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA060001000000000000001 /* VelunApp.swift in Sources */,
+				AA060002000000000000001 /* MenuBarManager.swift in Sources */,
+				AA060003000000000000001 /* ConfigurationView.swift in Sources */,
+				AA060004000000000000001 /* VPNManager.swift in Sources */,
+				AA060005000000000000001 /* TunnelConfiguration.swift in Sources */,
+				AA064001000000000000001 /* VPNBackend.swift in Sources */,
+				AA060007000000000000001 /* KeychainHelper.swift in Sources */,
+				AA060008000000000000001 /* SystemExtensionInstaller.swift in Sources */,
+				AA060009000000000000001 /* TunnelExport.swift in Sources */,
+				AA0600B0000000000000001 /* SystemProfileImporter.swift in Sources */,
+				AA0600B1000000000000001 /* ServerAddress.swift in Sources */,
+				AA0600B2000000000000001 /* SSOWebView.swift in Sources */,
+				AA0600B3000000000000001 /* DomainRouteResolver.swift in Sources */,
+				AA0600A0000000000000001 /* VPNConfig.swift in Sources */,
+				AA0600A1000000000000001 /* UpdaterManager.swift in Sources */,
+				AA0600A2000000000000001 /* AboutScreen.swift in Sources */,
+				AA0600A3000000000000001 /* AboutScreenUI.swift in Sources */,
+				AA0600A4000000000000001 /* StatusBroadcaster.swift in Sources */,
+				AA0600A5000000000000001 /* URLActionHandler.swift in Sources */,
+				AA0600A6000000000000001 /* LaunchAtLoginManager.swift in Sources */,
+				AA0600A7000000000000001 /* OTPSecretImporter.swift in Sources */,
+				AA0600A8000000000000001 /* QRScannerView.swift in Sources */,
+				AA0600A9000000000000001 /* NetworkPathWatcher.swift in Sources */,
+				AA060B01000000000000001 /* IPv4Packet.swift in Sources */,
+				AA060B01000000000000090 /* IPv6Support.swift in Sources */,
+				AA060B02000000000000001 /* UserspaceTCP.swift in Sources */,
+				AA060B03000000000000001 /* IPRouter.swift in Sources */,
+				AA060B04000000000000001 /* PortForwarder.swift in Sources */,
+				AA060B05000000000000001 /* ScriptedRunner.swift in Sources */,
+				AA060B10000000000000001 /* CSTPTunnel.swift in Sources */,
+				AAD20000000000000000001 /* DTLS.swift in Sources */,
+				AAD20000000000000000002 /* DTLSConnection.swift in Sources */,
+				AA060B11000000000000001 /* VPNAuth.swift in Sources */,
+				AA060B12000000000000001 /* FortinetTunnel.swift in Sources */,
+				AA060B13000000000000001 /* GPTunnel.swift in Sources */,
+				AA060B14000000000000001 /* TOTPGenerator.swift in Sources */,
+				AA060C01000000000000001 /* Changelog.swift in Sources */,
+				AA060B06000000000000001 /* CommandsManagerSheet.swift in Sources */,
+				AA060B07000000000000001 /* CommandRunSheet.swift in Sources */,
+				AAF20000000000000000001 /* UnifiedIPC.swift in Sources */,
+				AAF20000000000000000005 /* UnifiedNEController.swift in Sources */,
+				AAF20000000000000000006 /* UnifiedNEBackend.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BE010000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA070002000000000000001 /* VPNAuth.swift in Sources */,
+				AA070003000000000000001 /* CSTPTunnel.swift in Sources */,
+				AAD30000000000000000001 /* DTLS.swift in Sources */,
+				AAD30000000000000000002 /* DTLSConnection.swift in Sources */,
+				AA070004000000000000001 /* TOTPGenerator.swift in Sources */,
+				AA070005000000000000001 /* TunnelConfiguration.swift in Sources */,
+				AA070009000000000000001 /* WireGuardQuickConfig.swift in Sources */,
+				AA0700A0000000000000001 /* FortinetTunnel.swift in Sources */,
+				AA0700A1000000000000001 /* GPTunnel.swift in Sources */,
+				AA0700A2000000000000001 /* RouteAutoDetect.swift in Sources */,
+				AA0700A3000000000000001 /* ReconnectController.swift in Sources */,
+				AA0700A4000000000000001 /* DnsSuffixAutoDetect.swift in Sources */,
+				AA070008000000000000001 /* main.swift in Sources */,
+				AAF30000000000000000001 /* UnifiedIPC.swift in Sources */,
+				AAF30000000000000000002 /* PacketNAT.swift in Sources */,
+				AAF30000000000000000090 /* IPv6Support.swift in Sources */,
+				AAF30000000000000000003 /* UnifiedRouter.swift in Sources */,
+				AAF3000000000000000000F /* FlowKeeper.swift in Sources */,
+				AAF30000000000000000004 /* UnifiedTunnelProvider.swift in Sources */,
+				AAF30000000000000000007 /* IPv4Packet.swift in Sources */,
+				AAF30000000000000000008 /* UnifiedDNSProxy.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CA020000000000000000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BB020000000000000000001 /* PacketTunnel */;
+			targetProxy = CA010000000000000000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		AA030001000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		AA030002000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+			};
+			name = Release;
+		};
+		BB040000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = App/velun.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+				CODE_SIGN_STYLE = Manual;
+				DEVELOPMENT_TEAM = PAJ4L89MD3;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = NO;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = velun;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.3.6;
+				OTHER_CODE_SIGN_FLAGS = "--timestamp";
+				PRODUCT_BUNDLE_IDENTIFIER = com.manueldeprada.velun;
+				PRODUCT_NAME = velun;
+				PROVISIONING_PROFILE_SPECIFIER = "velun Developer ID";
+				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
+				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
+				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
+				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
+				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BB050000000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				AUTOMATION_APPLE_EVENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = App/velun.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
+				DEVELOPMENT_TEAM = PAJ4L89MD3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PHOTO_LIBRARY = NO;
+				INFOPLIST_FILE = App/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = velun;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MARKETING_VERSION = 0.3.6;
+				PRODUCT_BUNDLE_IDENTIFIER = com.manueldeprada.velun;
+				PRODUCT_NAME = velun;
+				PROVISIONING_PROFILE_SPECIFIER = "velun Developer ID";
+				RUNTIME_EXCEPTION_ALLOW_DYLD_ENVIRONMENT_VARIABLES = NO;
+				RUNTIME_EXCEPTION_ALLOW_JIT = NO;
+				RUNTIME_EXCEPTION_ALLOW_UNSIGNED_EXECUTABLE_MEMORY = NO;
+				RUNTIME_EXCEPTION_DEBUGGING_TOOL = NO;
+				RUNTIME_EXCEPTION_DISABLE_EXECUTABLE_PAGE_PROTECTION = NO;
+				RUNTIME_EXCEPTION_DISABLE_LIBRARY_VALIDATION = NO;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		BB070000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Tunnel/PacketTunnel.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_INJECT_BASE_ENTITLEMENTS = NO;
+				CODE_SIGN_STYLE = Manual;
+				DEVELOPMENT_TEAM = PAJ4L89MD3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Tunnel/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../Frameworks",
+				);
+				OTHER_CODE_SIGN_FLAGS = "--timestamp";
+				PRODUCT_BUNDLE_IDENTIFIER = com.manueldeprada.velun.PacketTunnel;
+				PRODUCT_NAME = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				PROVISIONING_PROFILE_SPECIFIER = "velun PacketTunnel Developer ID";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		BB080000000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Tunnel/PacketTunnel.entitlements;
+				CODE_SIGN_IDENTITY = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
+				DEVELOPMENT_TEAM = PAJ4L89MD3;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Tunnel/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../../Frameworks",
+					"@executable_path/../../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.manueldeprada.velun.PacketTunnel;
+				PRODUCT_NAME = "$(PRODUCT_BUNDLE_IDENTIFIER)";
+				PROVISIONING_PROFILE_SPECIFIER = "velun PacketTunnel Developer ID";
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		AA020000000000000000001 /* Build configuration list for PBXProject "velun" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA030001000000000000001 /* Debug */,
+				AA030002000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB030000000000000000001 /* Build configuration list for PBXNativeTarget "velun" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB040000000000000000001 /* Debug */,
+				BB050000000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		BB060000000000000000001 /* Build configuration list for PBXNativeTarget "PacketTunnel" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BB070000000000000000001 /* Debug */,
+				BB080000000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		ACA2EC0C2F9D62470043A48A /* XCLocalSwiftPackageReference "vendor/wireguard-apple" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "vendor/wireguard-apple";
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		ACA2EC0B2F9D612A0043A48A /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.9.1;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		ACA2ED012F9D612A0043A48A /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ACA2EC0B2F9D612A0043A48A /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
+		};
+		ACA2ED022F9D612A0043A48A /* WireGuardKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = ACA2EC0C2F9D62470043A48A /* XCLocalSwiftPackageReference "vendor/wireguard-apple" */;
+			productName = WireGuardKit;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = AA010000000000000000001 /* Project object */;
+}
