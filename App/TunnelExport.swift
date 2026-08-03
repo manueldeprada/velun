@@ -34,7 +34,7 @@ enum TunnelExport {
             if !oc.group.isEmpty        { d["group"]          = oc.group }
             if !oc.splitRoutes.isEmpty  { d["splitRoutes"]    = oc.splitRoutes }
             if oc.partialEnabled        { d["partialEnabled"] = true }
-            if !oc.username.isEmpty     { d["username"]       = oc.username }
+            if !oc.tunnelDomains.isEmpty { d["tunnelDomains"] = oc.tunnelDomains }
             if includeCredentials {
                 let pw   = KeychainHelper.loadPassword(for: profile.id) ?? ""
                 let totp = KeychainHelper.loadTOTP(for: profile.id)    ?? ""
@@ -130,7 +130,7 @@ enum TunnelExport {
             oc.group        = dict["group"]       as? String ?? ""
             oc.splitRoutes  = dict["splitRoutes"] as? String ?? ""
             oc.partialEnabled = (dict["partialEnabled"] as? Bool) ?? !oc.splitRoutes.isEmpty
-            oc.username     = dict["username"]    as? String ?? ""
+            oc.tunnelDomains = dict["tunnelDomains"] as? String ?? ""
             oc.password     = dict["password"]    as? String ?? ""
             oc.totpSecret   = dict["totpSecret"]  as? String ?? ""
             p.config = .sslVPN(oc)

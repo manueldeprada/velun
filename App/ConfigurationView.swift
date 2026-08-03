@@ -139,16 +139,27 @@ struct ConfigurationView: View {
     // MARK: – Profile list
 
     private var profileList: some View {
-        ScrollView {
-            VStack(spacing: 6) {
-                ForEach(vpn.profiles) { profile in
-                    ProfileCard(profile: profile)
-                        .environmentObject(vpn)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(spacing: 6) {
+                    ForEach(vpn.profiles) { profile in
+                        ProfileCard(profile: profile)
+                            .environmentObject(vpn)
+                            .id(profile.id)
+                    }
                 }
+                .padding(8)
             }
-            .padding(8)
+            .frame(maxHeight: 520)
+            .onChange(of: vpn.newlyAddedProfileID) { id in
+                guard let id else { return }
+                withAnimation { proxy.scrollTo(id, anchor: .top) }
+            }
+            .onChange(of: vpn.newlyImportedProfileID) { id in
+                guard let id else { return }
+                withAnimation { proxy.scrollTo(id, anchor: .top) }
+            }
         }
-        .frame(maxHeight: 520)
     }
 
     // MARK: – First-run system-import notice
@@ -203,13 +214,23 @@ struct ConfigurationView: View {
                         "Two-factor login? Scan your authenticator's QR code once and velun fills in the 6-digit code for you on every connect.")
                     welcomeBullet("arrow.triangle.branch",
                         "Split tunneling: send only your work networks through the VPN and keep everything else on your normal connection, or route it all, with a built-in kill switch.")
+                    welcomeBullet("person.2",
+                        "Has a friend or your IT team already set up velun? Ask them to share the connection with you, then use \"Import from URL…\" below.")
                 }
-                Button { _ = vpn.addProfile() } label: {
-                    Label("Add Connection", systemImage: "plus")
-                        .frame(maxWidth: .infinity)
+                HStack(spacing: 8) {
+                    Button { _ = vpn.addProfile() } label: {
+                        Label("Add Connection", systemImage: "plus")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    Button { importFromSystem() } label: {
+                        Label("Import from system", systemImage: "square.and.arrow.down.on.square")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.large)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
             }
             .padding(20)
             .frame(maxWidth: .infinity)
@@ -526,6 +547,30 @@ struct AdvancedPopover: View {
 
 }
 
+// MARK: – 2FA automation explainer
+
+struct TOTPHelpPopover: View {
+    var showsQRButton: Bool = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("2FA automation").font(.headline)
+            Text("Tired of typing your 2FA code on every connection? velun can generate it for you.")
+            Text("To do that, velun needs your \"TOTP secret\": a base32 string your authenticator app uses to generate codes.")
+            Text("In Google Authenticator: side menu → Transfer accounts → Export accounts → select your VPN account. It shows a QR code containing the secret. " +
+                 (showsQRButton
+                  ? "Use the QR button next to this field to scan it and import it automatically."
+                  : "Scan it from this connection's settings, using the QR button next to the TOTP secret field."))
+            Text("Note: some apps, like Microsoft Authenticator, don't allow exporting the secret. If yours doesn't, you must re-generate your 2FA seed, which should be possible in the account settings of your organization.")
+                .foregroundStyle(.secondary)
+        }
+        .font(.caption)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(16)
+        .frame(width: 320)
+    }
+}
+
 // MARK: – Per-profile card
 
 struct ProfileCard: View {
@@ -541,6 +586,7 @@ struct ProfileCard: View {
     @State private var mfaCode        = ""
     @State private var shareBlob:     String?    // non-nil → Share sheet shown
     @State private var showQRScanner       = false   // TOTP QR-import sheet
+    @State private var showTOTPHelp        = false   // "2FA automation" explainer popover
     @State private var showCommandsManager = false   // "Commands through VPN" CRUD sheet
     @State private var runCommand: ScriptedCommand? = nil   // non-nil → CommandRunSheet shown
 
@@ -608,6 +654,15 @@ struct ProfileCard: View {
                     focusedField = .name
                 }
             }
+            if vpn.newlyImportedProfileID == profile.id {
+                isExpanded = true
+                vpn.newlyImportedProfileID = nil
+                if let target = firstMissingField {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        focusedField = target
+                    }
+                }
+            }
         }
     }
 
@@ -624,27 +679,23 @@ struct ProfileCard: View {
             Image(systemName: appliedIcon(report))
                 .font(.caption2).foregroundStyle(appliedColor(report))
             VStack(alignment: .leading, spacing: 2) {
-                if !report.routes.isEmpty && report.source != .full {
+                if report.source != .full, !(report.routes.isEmpty && report.resolvedHostRoutes.isEmpty) {
+                    let domains = DomainRouteResolver.hostnames(from: profile.config.tunnelDomains)
+                    let items = report.routes + domains
                     (Text(appliedTitle(report) + " ")
                         .font(.caption2).foregroundColor(.primary)
-                     + Text(report.routes.joined(separator: "  "))
+                     + Text(items.joined(separator: ", "))
                         .font(.system(.caption2, design: .monospaced))
                         .foregroundColor(.secondary))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                         .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
                 } else {
                     Text(appliedTitle(report))
                         .font(.caption2).foregroundStyle(.primary)
                 }
                 if !report.dnsSuffixes.isEmpty && report.source != .full {
                     Text("DNS for " + report.dnsSuffixes.map { "*.\($0)" }.joined(separator: ", ") + " via VPN")
-                        .font(.system(.caption2, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if !report.resolvedHostRoutes.isEmpty && report.source != .full {
-                    Text("Also " + report.resolvedHostRoutes.joined(separator: "  ") + " (from your hostnames)")
                         .font(.system(.caption2, design: .monospaced))
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
@@ -941,6 +992,20 @@ struct ProfileCard: View {
         }
     }
 
+    private var missingRequiredFields: Set<Field> {
+        guard !canConnect else { return [] }
+        switch draft.config {
+        case .sslVPN(let oc):
+            var s: Set<Field> = []
+            if oc.host.isEmpty     { s.insert(.host) }
+            if oc.username.isEmpty { s.insert(.username) }
+            if oc.password.isEmpty { s.insert(.password) }
+            return s
+        case .wireguard:
+            return []
+        }
+    }
+
     private var canConnect: Bool {
         let cfg = isExpanded ? draft.config : profile.config
         switch cfg {
@@ -1005,6 +1070,19 @@ struct ProfileCard: View {
         VStack(alignment: .leading, spacing: 6) {
             Text(challenge.prompt)
                 .font(.caption).foregroundStyle(.secondary)
+            HStack(alignment: .top, spacing: 4) {
+                Text("Tip: add a TOTP secret in the settings to skip this step automatically.")
+                    .font(.caption2).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Button { showTOTPHelp = true } label: {
+                    Image(systemName: "questionmark.circle")
+                }
+                .buttonStyle(.plain)
+                .help("How does this work?")
+                .popover(isPresented: $showTOTPHelp, arrowEdge: .bottom) {
+                    TOTPHelpPopover(showsQRButton: false)
+                }
+            }
             HStack(spacing: 6) {
                 SecureField("Verification code", text: $mfaCode)
                     .textFieldStyle(.roundedBorder)
@@ -1014,9 +1092,6 @@ struct ProfileCard: View {
                     .controlSize(.small)
                     .disabled(mfaCode.isEmpty)
             }
-            Text("Tip: add a TOTP secret in the settings to skip this step automatically.")
-                .font(.caption2).foregroundStyle(.tertiary)
-                .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
     }
@@ -1030,54 +1105,7 @@ struct ProfileCard: View {
     // MARK: – Edit form
 
     private var editForm: some View {
-        VStack(alignment: .leading, spacing: 12) {
-
-            HStack(alignment: .top, spacing: 8) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Name").font(.caption).foregroundStyle(.secondary)
-                    TextField("My VPN", text: $draft.name)
-                        .textFieldStyle(.roundedBorder)
-                        .focused($focusedField, equals: .name)
-                        .onChange(of: draft.name) { v in
-                            let clean = v.components(separatedBy: .newlines).joined()
-                            if clean != v { draft.name = clean }
-                        }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Protocol").font(.caption).foregroundStyle(.secondary)
-                    Picker("", selection: providerBinding) {
-                        ForEach(ProviderType.allCases) { t in Text(t.displayName).tag(t) }
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            if draft.provider == .fortinet || draft.provider == .globalProtect {
-                Label(
-                    "\(draft.provider.displayName) support is experimental: we lack test servers for it. Please contact the app author if you'd like to use it or help test it.",
-                    systemImage: "exclamationmark.triangle.fill"
-                )
-                .font(.caption)
-                .foregroundStyle(.orange)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Divider()
-
-            switch draft.config {
-            case .sslVPN:
-                sslVPNFields
-            case .wireguard:
-                wireguardFields
-            }
-
-            splitRoutingSection
-
-            Divider()
+        VStack(alignment: .leading, spacing: 8) {
 
             HStack(spacing: 6) {
                 Button {
@@ -1132,8 +1160,53 @@ struct ProfileCard: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+
+            Divider()
+
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Name").font(.caption).foregroundStyle(.secondary)
+                    TextField("My VPN", text: $draft.name)
+                        .textFieldStyle(.roundedBorder)
+                        .focused($focusedField, equals: .name)
+                        .onChange(of: draft.name) { v in
+                            let clean = v.components(separatedBy: .newlines).joined()
+                            if clean != v { draft.name = clean }
+                        }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Protocol").font(.caption).foregroundStyle(.secondary)
+                    Picker("", selection: providerBinding) {
+                        ForEach(ProviderType.allCases) { t in Text(t.displayName).tag(t) }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if draft.provider == .fortinet || draft.provider == .globalProtect {
+                Label(
+                    "\(draft.provider.displayName) support is experimental: we lack test servers for it. Please contact the app author if you'd like to use it or help test it.",
+                    systemImage: "exclamationmark.triangle.fill"
+                )
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .fixedSize(horizontal: false, vertical: true)
+            }
+
+            switch draft.config {
+            case .sslVPN:
+                sslVPNFields
+            case .wireguard:
+                wireguardFields
+            }
+
+            splitRoutingSection
         }
-        .padding(12)
+        .padding(10)
         .sheet(item: Binding(
             get: { shareBlob.map { ShareBlob(text: $0) } },
             set: { shareBlob = $0?.text }
@@ -1188,20 +1261,27 @@ struct ProfileCard: View {
     private var sslVPNFields: some View {
         let oc = sslVPNBinding
         HStack(alignment: .top, spacing: 8) {
-            field("Server", value: oc.host, placeholder: "vpn.example.com", focus: .host)
+            field("Server", value: oc.host, placeholder: "vpn.example.com", focus: .host,
+                  missing: missingRequiredFields.contains(.host))
                 .frame(maxWidth: .infinity, alignment: .leading)
-            VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text("Port").font(.caption).foregroundStyle(.secondary)
                 TextField("443", text: oc.portText)
                     .textFieldStyle(.roundedBorder)
                     .frame(width: 64)
             }
         }
-        field("Group",    value: oc.group,    placeholder: "e.g. student-net (blank if none)")
-        field("Username", value: oc.username, placeholder: "username", focus: .username)
-        secureField("Password", value: oc.password, focus: .password)
-        VStack(alignment: .leading, spacing: 3) {
-            Text("TOTP Secret").font(.caption).foregroundStyle(.secondary)
+        HStack(alignment: .top, spacing: 8) {
+            field("Username", value: oc.username, placeholder: "username", focus: .username,
+                  missing: missingRequiredFields.contains(.username))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            field("Group", value: oc.group, placeholder: "(optional)")
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        secureField("Password", value: oc.password, focus: .password,
+                    missing: missingRequiredFields.contains(.password))
+        VStack(alignment: .leading, spacing: 2) {
+            Text("2FA automation (TOTP secret)").font(.caption).foregroundStyle(.secondary)
             HStack(spacing: 6) {
                 SecureField("••••••••", text: oc.totpSecret)
                     .textFieldStyle(.roundedBorder)
@@ -1214,8 +1294,16 @@ struct ProfileCard: View {
                 }
                 .buttonStyle(.bordered)
                 .help("Scan a TOTP QR code with the camera")
+                Button { showTOTPHelp = true } label: {
+                    Image(systemName: "questionmark.circle")
+                }
+                .buttonStyle(.bordered)
+                .help("How does this work?")
+                .popover(isPresented: $showTOTPHelp, arrowEdge: .bottom) {
+                    TOTPHelpPopover()
+                }
             }
-            Text("base32:XXXX… or scan a QR. Leave blank to be asked for the 2FA code when connecting.")
+            Text("base32:XXX… or scan the export 2FA QR from your Authenticator app.")
                 .font(.caption2).foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -1225,7 +1313,7 @@ struct ProfileCard: View {
     @ViewBuilder
     private var clientCertRow: some View {
         let name = draft.sslVPNFamily.clientCertName
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 2) {
             Text("Client certificate").font(.caption).foregroundStyle(.secondary)
             HStack(spacing: 6) {
                 Text(name.isEmpty ? "None" : name)
@@ -1241,7 +1329,7 @@ struct ProfileCard: View {
                         .help("Remove the client certificate")
                 }
             }
-            Text("Only for VPNs that require a certificate. Import a .p12 (certificate + private key), exported from Keychain Access. If the key is non-exportable, only the official client can connect.")
+            Text("Only for VPNs that require a certificate. Import a .p12 (certificate + private key), exported from Keychain Access.")
                 .font(.caption2).foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -1284,7 +1372,7 @@ struct ProfileCard: View {
 
     @ViewBuilder
     private var wireguardFields: some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 2) {
             Text("WireGuard configuration").font(.caption).foregroundStyle(.secondary)
             TextEditor(text: wgConfBinding)
                 .font(.system(.caption, design: .monospaced))
@@ -1314,7 +1402,7 @@ struct ProfileCard: View {
     // MARK: – Split routing section
 
     private var splitRoutingSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 3) {
             Toggle(isOn: splitRoutingBinding) {
                 Text("Split routing").font(.caption).foregroundStyle(.secondary)
             }
@@ -1345,23 +1433,15 @@ struct ProfileCard: View {
                 } else {
                     Text(isWG
                          ? "Override AllowedIPs in the conf for partial-tunnel routing"
-                         : "Space-separated CIDRs routed through the VPN (partial tunnel)")
+                         : "Comma-separated domains to be routed through the VPN")
                         .font(.caption2).foregroundStyle(.tertiary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if !isWG {
-                    TextField("(optional) also tunnel these hostnames, e.g. portal.example.org",
+                    TextField("Example: portal.example.org,mail.example.org",
                               text: tunnelDomainsBinding)
                         .textFieldStyle(.roundedBorder)
-                    if !draft.config.tunnelDomains
-                        .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        Text("Looked up after connecting; their addresses go through the VPN " +
-                             "and are refreshed every few minutes. For services the networks " +
-                             "above don't cover.")
-                            .font(.caption2).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
                 }
             } else {
                 HStack(alignment: .top, spacing: 4) {
@@ -1379,7 +1459,7 @@ struct ProfileCard: View {
     private var autoDetectPlaceholder: String {
         draft.config.wireguard != nil
             ? "(blank → use AllowedIPs from conf)"
-            : "(blank → suggest from server hints)   or   129.132.0.0/16 10.0.0.0/8"
+            : "(blank → suggest from server hints)   or   129.132.0.0/16,10.0.0.0/8"
     }
 
     private var splitRoutesBinding: Binding<String> {
@@ -1420,9 +1500,10 @@ struct ProfileCard: View {
 
     private func field(_ label: String, value: Binding<String>,
                        placeholder: String = "", help: String? = nil,
-                       focus: Field? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(.caption).foregroundStyle(.secondary)
+                       focus: Field? = nil, missing: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(missing ? "\(label) (required)" : label)
+                .font(.caption).foregroundStyle(missing ? .red : .secondary)
             Group {
                 if let focus {
                     TextField(placeholder, text: value)
@@ -1432,6 +1513,7 @@ struct ProfileCard: View {
                 }
             }
             .textFieldStyle(.roundedBorder)
+            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.red.opacity(missing ? 0.6 : 0)))
             .onChange(of: value.wrappedValue) { v in
                 let clean = v.components(separatedBy: .newlines).joined()
                 if clean != v { value.wrappedValue = clean }
@@ -1444,9 +1526,10 @@ struct ProfileCard: View {
     }
 
     private func secureField(_ label: String, value: Binding<String>,
-                             help: String? = nil, focus: Field? = nil) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(label).font(.caption).foregroundStyle(.secondary)
+                             help: String? = nil, focus: Field? = nil, missing: Bool = false) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(missing ? "\(label) (required)" : label)
+                .font(.caption).foregroundStyle(missing ? .red : .secondary)
             Group {
                 if let focus {
                     SecureField("••••••••", text: value)
@@ -1456,6 +1539,7 @@ struct ProfileCard: View {
                 }
             }
             .textFieldStyle(.roundedBorder)
+            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.red.opacity(missing ? 0.6 : 0)))
             .onChange(of: value.wrappedValue) { v in
                 let clean = v.components(separatedBy: .newlines).joined()
                 if clean != v { value.wrappedValue = clean }

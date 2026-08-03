@@ -79,6 +79,8 @@ class VPNManager: ObservableObject {
 
     @Published var newlyAddedProfileID: UUID?
 
+    @Published var newlyImportedProfileID: UUID?
+
     @discardableResult
     func addProfile() -> VPNProfile {
         let p = VPNProfile()
@@ -142,6 +144,7 @@ class VPNManager: ObservableObject {
             profiles.append(p)
         }
         persist()
+        if incoming.count == 1 { newlyImportedProfileID = incoming[0].id }
         return incoming
     }
 
