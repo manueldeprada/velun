@@ -187,17 +187,17 @@ class MenuBarManager {
         let transitional = statuses.values.contains {
             $0 == .connecting || $0 == .reconnecting || $0 == .disconnecting
         }
-        let name: String
+        let base: NSImage?
         if transitional {
-            name = "ellipsis.circle"
+            base = Self.templateIcon(named: "connecting") ?? symbolImage("ellipsis.circle")
         } else if connected > 0 {
-            name = "arrow.up.arrow.down.circle.fill"
+            base = Self.templateIcon(named: "connected") ?? symbolImage("arrow.up.arrow.down.circle.fill")
         } else if statuses.values.contains(where: { if case .failed = $0 { return true }; return false }) {
-            name = "xmark.circle"
+            base = symbolImage("xmark.circle")
         } else {
-            name = "arrow.up.arrow.down.circle"
+            base = Self.templateIcon(named: "disconnected") ?? symbolImage("arrow.up.arrow.down.circle")
         }
-        statusItem.button?.image = badgedImage(base: symbolImage(name), count: connected)
+        statusItem.button?.image = badgedImage(base: base, count: connected)
     }
 
     private func symbolImage(_ name: String) -> NSImage? {

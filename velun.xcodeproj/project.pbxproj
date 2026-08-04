@@ -76,6 +76,10 @@
 		ACA2EBFA2F9C49F60043A48A /* velun.icns in Resources */ = {isa = PBXBuildFile; fileRef = ACA2EBF82F9C49F60043A48A /* velun.icns */; };
 		ACA2EC102F9C49F60043A48A /* connected.png in Resources */ = {isa = PBXBuildFile; fileRef = ACA2EC0E2F9C49F60043A48A /* connected.png */; };
 		ACA2EC112F9C49F60043A48A /* disconnected.png in Resources */ = {isa = PBXBuildFile; fileRef = ACA2EC0F2F9C49F60043A48A /* disconnected.png */; };
+		ACA2EC122F9C49F60043A48A /* connected@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ACA2EC142F9C49F60043A48A /* connected@2x.png */; };
+		ACA2EC132F9C49F60043A48A /* disconnected@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ACA2EC152F9C49F60043A48A /* disconnected@2x.png */; };
+		ACA2EC162F9C49F60043A48A /* connecting.png in Resources */ = {isa = PBXBuildFile; fileRef = ACA2EC182F9C49F60043A48A /* connecting.png */; };
+		ACA2EC172F9C49F60043A48A /* connecting@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = ACA2EC192F9C49F60043A48A /* connecting@2x.png */; };
 		ACA2ED032F9D612A0043A48A /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = ACA2ED012F9D612A0043A48A /* Sparkle */; };
 		ACA2ED042F9D612A0043A48A /* WireGuardKit in Frameworks */ = {isa = PBXBuildFile; productRef = ACA2ED022F9D612A0043A48A /* WireGuardKit */; };
 /* End PBXBuildFile section */
@@ -166,6 +170,10 @@
 		ACA2EC052F9C4EC10043A48A /* velun.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = velun.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ACA2EC0E2F9C49F60043A48A /* connected.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Assets/connected.png; sourceTree = "<group>"; };
 		ACA2EC0F2F9C49F60043A48A /* disconnected.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Assets/disconnected.png; sourceTree = "<group>"; };
+		ACA2EC142F9C49F60043A48A /* connected@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Assets/connected@2x.png"; sourceTree = "<group>"; };
+		ACA2EC152F9C49F60043A48A /* disconnected@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Assets/disconnected@2x.png"; sourceTree = "<group>"; };
+		ACA2EC182F9C49F60043A48A /* connecting.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = Assets/connecting.png; sourceTree = "<group>"; };
+		ACA2EC192F9C49F60043A48A /* connecting@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "Assets/connecting@2x.png"; sourceTree = "<group>"; };
 		DD020000000000000000001 /* PacketTunnel.systemextension */ = {isa = PBXFileReference; explicitFileType = "wrapper.system-extension"; includeInIndex = 0; name = PacketTunnel.systemextension; path = com.manueldeprada.velun.PacketTunnel.systemextension; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -198,6 +206,10 @@
 				ACA2EBF82F9C49F60043A48A /* velun.icns */,
 				ACA2EC0E2F9C49F60043A48A /* connected.png */,
 				ACA2EC0F2F9C49F60043A48A /* disconnected.png */,
+				ACA2EC142F9C49F60043A48A /* connected@2x.png */,
+				ACA2EC152F9C49F60043A48A /* disconnected@2x.png */,
+				ACA2EC182F9C49F60043A48A /* connecting.png */,
+				ACA2EC192F9C49F60043A48A /* connecting@2x.png */,
 			);
 			sourceTree = "<group>";
 		};
@@ -393,6 +405,10 @@
 				ACA2EBF92F9C49F60043A48A /* velun.icns in Resources */,
 				ACA2EC102F9C49F60043A48A /* connected.png in Resources */,
 				ACA2EC112F9C49F60043A48A /* disconnected.png in Resources */,
+				ACA2EC122F9C49F60043A48A /* connected@2x.png in Resources */,
+				ACA2EC132F9C49F60043A48A /* disconnected@2x.png in Resources */,
+				ACA2EC162F9C49F60043A48A /* connecting.png in Resources */,
+				ACA2EC172F9C49F60043A48A /* connecting@2x.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -675,7 +691,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.3.8;
+				MARKETING_VERSION = 0.3.9;
 				OTHER_CODE_SIGN_FLAGS = "--timestamp";
 				PRODUCT_BUNDLE_IDENTIFIER = com.manueldeprada.velun;
 				PRODUCT_NAME = velun;
@@ -712,7 +728,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.3.8;
+				MARKETING_VERSION = 0.3.9;
 				PRODUCT_BUNDLE_IDENTIFIER = com.manueldeprada.velun;
 				PRODUCT_NAME = velun;
 				PROVISIONING_PROFILE_SPECIFIER = "velun Developer ID";

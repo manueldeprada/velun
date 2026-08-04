@@ -92,9 +92,9 @@ struct ConfigurationView: View {
 
     private var globalHeader: some View {
         HStack {
-            Image(systemName: vpn.anyConnected ? "arrow.up.arrow.down.circle.fill" : "arrow.up.arrow.down.circle")
-                .foregroundStyle(vpn.anyConnected ? Color.green : Color.secondary)
-                .font(.title2)
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable().aspectRatio(contentMode: .fit)
+                .frame(width: 34, height: 34)
             VStack(alignment: .leading, spacing: 1) {
                 Text("velun").font(.headline)
                 Text(headerSubtitle).font(.caption).foregroundStyle(.secondary)
