@@ -9,6 +9,10 @@ final class SystemExtensionInstaller: NSObject {
     enum Result {
         case completed
         case needsApproval
+        /// OSSystemExtensionError.forbiddenBySystemPolicy (10).
+        case blockedByPolicy
+        /// OSSystemExtensionError.authorizationRequired (13): needs an admin.
+        case needsAdminAuthorization
         case failed(String)
     }
 
@@ -18,6 +22,8 @@ final class SystemExtensionInstaller: NSObject {
     private var pending: [(Result) -> Void] = []
     // Keep a strong reference so the request isn't released mid-flight.
     private var inflightRequest: OSSystemExtensionRequest?
+
+    private(set) var sawPolicyDenial = false
 
     func activate(_ completion: @escaping (Result) -> Void) {
         if inflightRequest != nil {
@@ -79,8 +85,46 @@ extension SystemExtensionInstaller: OSSystemExtensionRequestDelegate {
 
     nonisolated func request(_ request: OSSystemExtensionRequest,
                              didFailWithError error: Error) {
-        let msg = (error as NSError).localizedDescription
-        log.error("Activation failed: \(msg, privacy: .public)")
-        Task { @MainActor in self.finish(.failed(msg)) }
+        let ns = error as NSError
+        let name = Self.codeName(ns)
+        log.error("Activation failed: \(ns.domain, privacy: .public) \(ns.code, privacy: .public) (\(name, privacy: .public))")
+        let result: Result
+        if ns.domain == OSSystemExtensionErrorDomain,
+           let code = OSSystemExtensionError.Code(rawValue: ns.code) {
+            switch code {
+            case .forbiddenBySystemPolicy: result = .blockedByPolicy
+            case .authorizationRequired:   result = .needsAdminAuthorization
+            default:                       result = .failed("\(name) (\(ns.code))")
+            }
+        } else {
+            result = .failed(ns.localizedDescription)
+        }
+        Task { @MainActor in
+            if case .blockedByPolicy = result { self.sawPolicyDenial = true }
+            self.finish(result)
+        }
+    }
+
+    nonisolated private static func codeName(_ ns: NSError) -> String {
+        guard ns.domain == OSSystemExtensionErrorDomain,
+              let code = OSSystemExtensionError.Code(rawValue: ns.code) else {
+            return ns.localizedDescription
+        }
+        switch code {
+        case .unknown:                          return "unknown failure"
+        case .missingEntitlement:               return "missing entitlement"
+        case .unsupportedParentBundleLocation:  return "app is in an unsupported location"
+        case .extensionNotFound:                return "extension not found in the app bundle"
+        case .extensionMissingIdentifier:       return "extension is missing its identifier"
+        case .duplicateExtensionIdentifer:      return "duplicate extension identifier"
+        case .unknownExtensionCategory:         return "unknown extension category"
+        case .codeSignatureInvalid:             return "invalid code signature"
+        case .validationFailed:                 return "validation failed"
+        case .forbiddenBySystemPolicy:          return "forbidden by system policy"
+        case .requestCanceled:                  return "request canceled"
+        case .requestSuperseded:                return "request superseded"
+        case .authorizationRequired:            return "administrator authorization required"
+        @unknown default:                       return "unrecognized error \(ns.code)"
+        }
     }
 }

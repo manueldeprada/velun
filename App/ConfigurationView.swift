@@ -20,6 +20,8 @@ struct ConfigurationView: View {
         let id = UUID()
         let title: String
         let message: String
+        var actionLabel: String? = nil
+        var action: (() -> Void)? = nil
     }
 
     var body: some View {
@@ -48,7 +50,13 @@ struct ConfigurationView: View {
         }
         .frame(width: 380)
         .alert(item: $importAlert) { a in
-            Alert(title: Text(a.title), message: Text(a.message), dismissButton: .default(Text("OK")))
+            if let label = a.actionLabel, let action = a.action {
+                return Alert(title: Text(a.title), message: Text(a.message),
+                             primaryButton: .default(Text(label), action: action),
+                             secondaryButton: .cancel(Text("OK")))
+            }
+            return Alert(title: Text(a.title), message: Text(a.message),
+                         dismissButton: .default(Text("OK")))
         }
         .sheet(item: Binding(
             get: { shareBlob.map { ShareBlob(text: $0) } },
@@ -193,49 +201,47 @@ struct ConfigurationView: View {
     // MARK: – Welcome / empty state
 
     private var welcomeView: some View {
-        ScrollView {
-            VStack(spacing: 14) {
-                Image(nsImage: NSApplication.shared.applicationIconImage)
-                    .resizable().aspectRatio(contentMode: .fit)
-                    .frame(width: 88, height: 88)
-                    .accessibilityLabel("velun")
-                VStack(spacing: 2) {
-                    Text("Welcome to velun")
-                        .font(.title3).fontWeight(.semibold)
-                    Text("A native macOS menu-bar VPN client")
-                        .font(.caption).foregroundStyle(.secondary)
-                }
-                VStack(spacing: 10) {
-                    welcomeBullet("plus.circle",
-                        "Add a VPN connection to get started. You'll need your server address and sign-in details.")
-                    welcomeBullet("menubar.dock.rectangle",
-                        "velun lives in the menu bar. Click its icon up top to reopen this window anytime, including after you grant macOS permissions.")
-                    welcomeBullet("qrcode.viewfinder",
-                        "Two-factor login? Scan your authenticator's QR code once and velun fills in the 6-digit code for you on every connect.")
-                    welcomeBullet("arrow.triangle.branch",
-                        "Split tunneling: send only your work networks through the VPN and keep everything else on your normal connection, or route it all, with a built-in kill switch.")
-                    welcomeBullet("person.2",
-                        "Has a friend or your IT team already set up velun? Ask them to share the connection with you, then use \"Import from URL…\" below.")
-                }
-                HStack(spacing: 8) {
-                    Button { _ = vpn.addProfile() } label: {
-                        Label("Add Connection", systemImage: "plus")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    Button { importFromSystem() } label: {
-                        Label("Import from system", systemImage: "square.and.arrow.down.on.square")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.large)
-                }
+        VStack(spacing: 10) {
+            Image(nsImage: NSApplication.shared.applicationIconImage)
+                .resizable().aspectRatio(contentMode: .fit)
+                .frame(width: 60, height: 60)
+                .accessibilityLabel("velun")
+            VStack(spacing: 2) {
+                Text("Welcome to velun")
+                    .font(.title3).fontWeight(.semibold)
+                Text("A native macOS menu-bar VPN client")
+                    .font(.caption).foregroundStyle(.secondary)
             }
-            .padding(20)
-            .frame(maxWidth: .infinity)
+            VStack(spacing: 8) {
+                welcomeBullet("plus.circle",
+                    "Add a VPN connection to get started. You'll need your server address and sign-in details.")
+                welcomeBullet("menubar.dock.rectangle",
+                    "velun lives in the menu bar. Click its icon up top to reopen this window anytime, including after you grant macOS permissions.")
+                welcomeBullet("qrcode.viewfinder",
+                    "Two-factor login? Scan your authenticator's QR code once and velun fills in the 6-digit code for you on every connect.")
+                welcomeBullet("arrow.triangle.branch",
+                    "Split tunneling: You can send only your work networks through the VPN and keep everything else on your normal connection.")
+                welcomeBullet("person.2",
+                    "Has a friend already set up velun? Ask them to share the connection with you, then use \"Import from URL…\" below.")
+            }
+            HStack(spacing: 8) {
+                Button { _ = vpn.addProfile() } label: {
+                    Label("Add Connection", systemImage: "plus")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                Button { importFromSystem() } label: {
+                    Label("Import from system", systemImage: "square.and.arrow.down.on.square")
+                        .frame(maxWidth: .infinity)
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.large)
+            }
         }
-        .frame(maxHeight: 520)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .frame(maxWidth: .infinity)
     }
 
     private func welcomeBullet(_ icon: String, _ text: String) -> some View {
@@ -304,8 +310,8 @@ struct ConfigurationView: View {
         shareBlob = vpn.exportBlob(includeCredentials: includeCredentials)
     }
 
-    private func importFromSystem() {
-        let r = vpn.importFromSystem()
+    private func importFromSystem(asAdministrator: Bool = false) {
+        let r = asAdministrator ? vpn.importFromSystemAsAdministrator() : vpn.importFromSystem()
         if !r.added.isEmpty {
             let n = r.added.count
             var msg = "Added \(n) connection\(n == 1 ? "" : "s") from this Mac. Enter your sign-in details on each, then connect."
@@ -320,11 +326,47 @@ struct ConfigurationView: View {
                 message: r.found == 1
                     ? "The VPN connection saved on this Mac is already in your list."
                     : "All \(r.found) VPN connections saved on this Mac are already in your list.")
+        } else if r.report.adminCancelled {
+            // The user dismissed the administrator prompt: no alert needed.
         } else {
-            importAlert = ImportAlert(
-                title: "Nothing found",
-                message: "velun couldn’t find any VPN connections saved on this Mac. Add one manually, or use Import from URL.")
+            importAlert = nothingFoundAlert(r.report)
         }
+    }
+
+    private func nothingFoundAlert(_ report: SystemProfileImporter.ScanReport) -> ImportAlert {
+        if report.blockedByFilePermissions {
+            return ImportAlert(
+                title: "Couldn’t read the saved connections",
+                message: "Another VPN client's connection files are on this Mac, but they're readable only by an administrator:\n\n"
+                    + report.detail
+                    + "\n\nvelun can read them with your administrator password. Nothing is sent anywhere: it copies the server addresses out of those files and fills in the connection for you.",
+                actionLabel: "Read as Administrator…",
+                action: { importFromSystem(asAdministrator: true) })
+        }
+        if report.blockedByPrivacy {
+            return ImportAlert(
+                title: "velun needs Full Disk Access",
+                message: "macOS is blocking velun from reading another VPN client's connection files:\n\n"
+                    + report.detail
+                    + "\n\nGrant velun Full Disk Access in System Settings → Privacy & Security, then try again.",
+                actionLabel: "Open Settings",
+                action: {
+                    if let url = URL(string: "x-apple.systempreferences:com.apple.settings.PrivacySecurity.extension?Privacy_AllFiles") {
+                        NSWorkspace.shared.open(url)
+                    }
+                })
+        }
+        if report.clientInstalled {
+            return ImportAlert(
+                title: "Nothing to import",
+                message: "Another VPN client is installed, but it hasn't saved any connection velun can read. This is normal when the server address was typed in by hand rather than pushed by your IT department.\n\nChecked:\n"
+                    + report.detail
+                    + "\n\nAdd the connection manually, or use Import from URL.")
+        }
+        return ImportAlert(
+            title: "Nothing found",
+            message: "velun couldn’t find any VPN connections saved on this Mac. Add one manually, or use Import from URL.\n\nChecked:\n"
+                + report.detail)
     }
 }
 
@@ -1281,9 +1323,10 @@ struct ProfileCard: View {
         secureField("Password", value: oc.password, focus: .password,
                     missing: missingRequiredFields.contains(.password))
         VStack(alignment: .leading, spacing: 2) {
-            Text("2FA automation (TOTP secret)").font(.caption).foregroundStyle(.secondary)
+            Text("2FA automation (TOTP secret, not a code)")
+                .font(.caption).foregroundStyle(.secondary)
             HStack(spacing: 6) {
-                SecureField("••••••••", text: oc.totpSecret)
+                SecureField("base32 secret, not the 6-digit code", text: oc.totpSecret)
                     .textFieldStyle(.roundedBorder)
                     .onChange(of: oc.totpSecret.wrappedValue) { v in
                         let clean = v.components(separatedBy: .newlines).joined()
@@ -1303,7 +1346,7 @@ struct ProfileCard: View {
                     TOTPHelpPopover()
                 }
             }
-            Text("base32:XXX… or scan the export 2FA QR from your Authenticator app.")
+            Text("Optional. This is the long secret your authenticator app was set up with, not the 6-digit code it shows: velun uses it to generate the codes itself. Scan it with the QR button, or leave this empty to type the code on every connect.")
                 .font(.caption2).foregroundStyle(.tertiary)
                 .fixedSize(horizontal: false, vertical: true)
         }

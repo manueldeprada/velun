@@ -14,6 +14,16 @@ enum Changelog {
     /// Append new entries here when shipping a release. Most recent at the top.
     static let entries: [ChangelogEntry] = [
         ChangelogEntry(
+            version: "0.3.8",
+            date:    "2026-08-04",
+            title:   "Clearer setup",
+            bullets: [
+                "Improved UX in first use.",
+                "\"Import from system\" says why it found nothing, and can read connection files that need administrator access.",
+                "velun now detects when a Mac's management profile blocks network extensions or VPN configurations, instead of reporting a generic install failure.",
+            ]
+        ),
+        ChangelogEntry(
             version: "0.3.7",
             date:    "2026-08-03",
             title:   "UI and profile share improvements",

@@ -17,7 +17,7 @@ struct SSLVPNFamilyConfig: Codable, Equatable {
     var clientCertP12:      String = ""   // Keychain-only, base64 of the .p12
     var clientCertPassword: String = ""   // Keychain-only
 
-    var partialEnabled: Bool = false
+    var partialEnabled: Bool = true
 
     enum CodingKeys: String, CodingKey {
         case host, port, username, group, splitRoutes, tunnelDomains, partialEnabled, clientCertName

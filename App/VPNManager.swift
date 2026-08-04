@@ -158,16 +158,25 @@ class VPNManager: ObservableObject {
         var found: Int
         /// The ones actually added (not already present).
         var added: [VPNProfile]
+        var report: SystemProfileImporter.ScanReport
         /// Found but skipped because the user already has them (host+group match).
         var alreadyPresent: Int { found - added.count }
     }
 
     @discardableResult
     func importFromSystem() -> SystemImportResult {
-        let candidates = SystemProfileImporter.scan()
-        let fresh = SystemProfileImporter.profiles(from: candidates, excluding: profiles)
+        adopt(SystemProfileImporter.scan())
+    }
+
+    @discardableResult
+    func importFromSystemAsAdministrator() -> SystemImportResult {
+        adopt(SystemProfileImporter.scanAsAdministrator())
+    }
+
+    private func adopt(_ report: SystemProfileImporter.ScanReport) -> SystemImportResult {
+        let fresh = SystemProfileImporter.profiles(from: report.candidates, excluding: profiles)
         let added = fresh.isEmpty ? [] : adoptImported(fresh)
-        return SystemImportResult(found: candidates.count, added: added)
+        return SystemImportResult(found: report.candidates.count, added: added, report: report)
     }
 
     func attemptFirstRunSystemImport() {

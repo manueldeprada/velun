@@ -223,10 +223,28 @@ final class UnifiedNEController {
         m.localizedDescription = Self.managerDescription
         m.isEnabled = true
         NotificationCenter.default.post(name: .velunDismissPopover, object: nil)
-        try await m.saveToPreferences()
+        do { try await m.saveToPreferences() }
+        catch { throw await Self.vpnConfigSaveError(error) }
         try await m.loadFromPreferences()
         manager = m
         installConnectionObserver()
+    }
+
+    private static func vpnConfigSaveError(_ error: Error) async -> Error {
+        let ns = error as NSError
+        let probe = await ManagedPolicyProbe.probe()
+        log.error("saveToPreferences failed: \(ns.domain, privacy: .public) \(ns.code, privacy: .public)")
+        if probe.vpnCreationDisallowed {
+            return NEBackendError.noProfile(
+                "This Mac doesn't allow adding VPN configurations, so velun can't " +
+                "register its tunnel.\n\n" + probe.attribution + "\n\n" +
+                "The restriction is allowVPNCreation in com.apple.applicationaccess. " +
+                "Whoever manages this Mac has to allow VPN configurations before " +
+                "velun (or any VPN app) can connect.")
+        }
+        return NEBackendError.noProfile(
+            "Failed to register velun's VPN configuration (\(ns.domain) \(ns.code)).\n\n"
+            + probe.attribution)
     }
 
     // MARK: – Shared-tunnel death watch
@@ -612,6 +630,19 @@ final class UnifiedNEController {
         switch result {
         case .completed:
             Self.sysExtActivated = true
+        case .blockedByPolicy:
+            throw NEBackendError.noProfile(await Self.policyBlockMessage())
+        case .needsAdminAuthorization:
+            let attribution = await ManagedPolicyProbe.probe().attribution
+            throw NEBackendError.noProfile(
+                "Installing velun's network extension needs an administrator.\n\n" +
+                "macOS is asking for administrator authorization before it will " +
+                "load the extension. Log in to an admin account (or have an admin " +
+                "approve velun in System Settings → General → Login Items & " +
+                "Extensions → Network Extensions), then click Connect again.\n\n" +
+                attribution)
+        case .needsApproval where SystemExtensionInstaller.shared.sawPolicyDenial:
+            throw NEBackendError.noProfile(await Self.policyBlockMessage())
         case .needsApproval:
             if let url = URL(string: "x-apple.systempreferences:com.apple.LoginItems-Settings.extension") {
                 NSWorkspace.shared.open(url)
@@ -629,5 +660,26 @@ final class UnifiedNEController {
         case .failed(let msg):
             throw NEBackendError.noProfile("System extension install failed: \(msg)")
         }
+    }
+
+    private static func policyBlockMessage() async -> String {
+        let probe = await ManagedPolicyProbe.probe()
+        var msg = "This Mac blocks network extensions.\n\n" +
+                  "macOS refused to install velun's extension outright, which is why " +
+                  "no approval prompt appeared and nothing shows up to allow in " +
+                  "System Settings.\n\n" + probe.attribution + "\n\n"
+        if probe.isManaged {
+            msg += "To allow velun, whoever manages this Mac has to permit the " +
+                   "extension in the System Extensions payload of your configuration " +
+                   "profile:\n\n" +
+                   "    Team ID:    PAJ4L89MD3\n" +
+                   "    Extension:  \(SystemExtensionInstaller.extensionIdentifier)\n" +
+                   "    Type:       Network Extension (packet tunnel provider)\n\n" +
+                   "Some profiles also block VPN configurations entirely " +
+                   "(allowVPNCreation), which has to be allowed as well.\n\n"
+        }
+        msg += "If nobody manages this Mac, an earlier \"Don't Allow\" may be cached: " +
+               "run `systemextensionsctl reset` in Terminal, then click Connect again."
+        return msg
     }
 }
