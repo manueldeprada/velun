@@ -22,6 +22,10 @@ struct DomainRouteResolver {
         return out
     }
 
+    static func normalizedList(from raw: String) -> String {
+        hostnames(from: raw).joined(separator: ", ")
+    }
+
     func cidrs(from raw: String) -> [String] {
         var out = Set<String>()
         for host in Self.hostnames(from: raw) {
@@ -55,5 +59,35 @@ struct DomainRouteResolver {
             p = ai.pointee.ai_next
         }
         return ips
+    }
+}
+
+enum RouteList {
+
+    static let bareAddressPrefixLength = 32
+
+    static func normalized(from raw: String) -> String {
+        var seen = Set<String>()
+        var out: [String] = []
+        let separators = CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: ","))
+        for token in raw.components(separatedBy: separators) {
+            let t = token.trimmingCharacters(in: .whitespaces)
+            guard !t.isEmpty else { continue }
+            let entry = expandBareAddress(t) ?? t
+            if seen.insert(entry).inserted { out.append(entry) }
+        }
+        return out.joined(separator: ", ")
+    }
+
+    static func expandBareAddress(_ token: String) -> String? {
+        guard !token.contains("/"), !token.contains(":") else { return nil }
+        let parts = token.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 4 else { return nil }
+        for p in parts {
+            guard !p.isEmpty, p.count <= 3, p.allSatisfy(\.isNumber),
+                  p.count == 1 || p.first != "0",
+                  UInt8(p) != nil else { return nil }
+        }
+        return "\(token)/\(bareAddressPrefixLength)"
     }
 }

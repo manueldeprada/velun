@@ -119,11 +119,3 @@ velun is free to use. If it is useful to you, a [license](https://store.manuelde
 ## Privacy
 
 A random per-install ID is generated locally to count unique installations. It cannot be linked to you, and no other telemetry is collected or sent anywhere.
-
----
-
-<p align="center">
-  <img src="Assets/velun.png" width="72" alt="">
-  <br>
-  <em>velo (bicycle) + tunnel. Your packets pedal through.</em>
-</p>

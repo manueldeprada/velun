@@ -33,6 +33,65 @@ func testDomainRouteHostnameParsing() {
     R.assertEqual(DomainRouteResolver.hostnames(from: "https:// , ."), [], "debris-only tokens dropped")
 }
 
+func testDomainRouteNormalizedList() {
+    R.enter("DomainRouteResolver field normalization")
+
+    R.assertEqual(DomainRouteResolver.normalizedList(from: "https://sbportal.sap.mpg.de/index.html"),
+                  "sbportal.sap.mpg.de", "pasted URL → bare hostname")
+    R.assertEqual(DomainRouteResolver.normalizedList(from: "sbportal.sap.mpg.de/index.html"),
+                  "sbportal.sap.mpg.de", "schemeless URL → bare hostname")
+    R.assertEqual(DomainRouteResolver.normalizedList(
+                      from: "https://portal.example.org/a  mail.example.org:993"),
+                  "portal.example.org, mail.example.org", "mixed list → comma-separated")
+    R.assertEqual(DomainRouteResolver.normalizedList(from: ""), "", "blank stays blank")
+    R.assertEqual(DomainRouteResolver.normalizedList(from: "   "), "", "whitespace-only → blank")
+
+    // Idempotence: the save path reapplies this to already-clean values.
+    let once = DomainRouteResolver.normalizedList(from: "HTTPS://A.example.com/x, b.example.com.")
+    R.assertEqual(once, "a.example.com, b.example.com", "canonical form")
+    R.assertEqual(DomainRouteResolver.normalizedList(from: once), once, "idempotent")
+}
+
+func testRouteListNormalization() {
+    R.enter("RouteList bare-address expansion")
+
+    R.assertEqual(RouteList.normalized(from: "10.15.0.5"), "10.15.0.5/32", "bare IP → /32")
+    R.assertEqual(RouteList.normalized(from: "192.168.1.50"), "192.168.1.50/32",
+                  "RFC1918 host not widened to the LAN's /24")
+    R.assertEqual(RouteList.normalized(from: "10.15.0.0"), "10.15.0.0/32",
+                  "a network-looking address is still just an address")
+
+    // Already-prefixed entries are the user's word on the matter.
+    R.assertEqual(RouteList.normalized(from: "129.132.0.0/16"), "129.132.0.0/16", "/len kept as typed")
+    R.assertEqual(RouteList.normalized(from: "10.0.0.0/8"), "10.0.0.0/8", "/8 not narrowed")
+
+    // Mixed lists and separators.
+    R.assertEqual(RouteList.normalized(from: "10.15.0.5 129.132.0.0/16"),
+                  "10.15.0.5/32, 129.132.0.0/16", "mixed list")
+    R.assertEqual(RouteList.normalized(from: "10.15.0.5, 10.15.0.7"),
+                  "10.15.0.5/32, 10.15.0.7/32", "two hosts stay two entries")
+    R.assertEqual(RouteList.normalized(from: "10.15.0.5, 10.15.0.5"),
+                  "10.15.0.5/32", "exact repeat deduped")
+    R.assertEqual(RouteList.normalized(from: " 10.1.2.3 \n 10.9.9.9 "),
+                  "10.1.2.3/32, 10.9.9.9/32", "newlines + padding, order kept")
+
+    R.assertEqual(RouteList.normalized(from: "10.15.0"), "10.15.0", "3 octets left alone")
+    R.assertEqual(RouteList.normalized(from: "10.15.0.5.6"), "10.15.0.5.6", "5 octets left alone")
+    R.assertEqual(RouteList.normalized(from: "10.15.0.999"), "10.15.0.999", "octet out of range")
+    R.assertEqual(RouteList.normalized(from: "10.15.0.010"), "10.15.0.010", "leading zero not reinterpreted")
+    R.assertEqual(RouteList.normalized(from: "fd00::1"), "fd00::1", "IPv6 untouched")
+    R.assertEqual(RouteList.normalized(from: "fd00::/8"), "fd00::/8", "IPv6 prefix untouched")
+    R.assertEqual(RouteList.normalized(from: "corp.example.com"), "corp.example.com",
+                  "hostname untouched (wrong field, but not ours to mangle)")
+    R.assertEqual(RouteList.normalized(from: ""), "", "blank stays blank")
+    R.assertEqual(RouteList.normalized(from: "  ,\n "), "", "separators only → blank")
+
+    // Idempotence: the save path reapplies this to already-canonical values.
+    let once = RouteList.normalized(from: "10.15.0.5, 192.168.1.50")
+    R.assertEqual(once, "10.15.0.5/32, 192.168.1.50/32", "canonical form")
+    R.assertEqual(RouteList.normalized(from: once), once, "idempotent")
+}
+
 func testDomainRouteCIDRs() {
     R.enter("DomainRouteResolver /32 formatting")
 

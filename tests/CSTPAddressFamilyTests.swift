@@ -82,3 +82,40 @@ func testCSTPFiltersIPv6Resolvers() throws {
     ]))
     R.assertEqual(cfg.dnsServers, ["129.132.250.5"], "only the v4 resolver survives")
 }
+
+// MARK: – Compression
+
+func testCSTPAdvertisesNoCompression() {
+    R.enter("CSTP: no compression advertised")
+    let req = CSTPTunnel.buildConnectRequest(host: "vpn.example.com", cookie: "c", reconnect: false)
+    R.assertTrue(!req.lowercased().contains("accept-encoding"),
+                 "no Accept-Encoding header — velun can't decompress what it would ask for")
+}
+
+func testCSTPRejectsCompressedSession() {
+    R.enter("CSTP: server-side compression is refused")
+    for encoding in ["lzs", "deflate", "oc-lz4"] {
+        do {
+            _ = try CSTPTunnel.parseCSTPHeaders(connectResponse([
+                "X-CSTP-Address: 10.1.18.134",
+                "X-CSTP-Content-Encoding: \(encoding)",
+            ]))
+            R.assertTrue(false, "\(encoding) must be refused at the handshake")
+        } catch {
+            R.assertTrue("\(error)".contains("compress"),
+                         "error names compression for \(encoding): \(error)")
+        }
+    }
+}
+
+func testCSTPAcceptsIdentityEncoding() throws {
+    R.enter("CSTP: identity/none encoding is not a failure")
+    // A server that answers the header with "none" is agreeing with us.
+    for encoding in ["none", "identity"] {
+        let cfg = try CSTPTunnel.parseCSTPHeaders(connectResponse([
+            "X-CSTP-Address: 10.1.18.134",
+            "X-CSTP-Content-Encoding: \(encoding)",
+        ]))
+        R.assertEqual(cfg.ipAddress, "10.1.18.134", "session accepted with \(encoding)")
+    }
+}

@@ -66,6 +66,8 @@ final class ManagedUpstream: RouterUpstream, @unchecked Sendable {
     var routeCIDRs: [String] = []
     var routeCIDRs6: [String] = []
     var domainRoutes: [String] = []
+    var dnsLearnedIPs: Set<UInt32> = []
+    var dnsLearnedRoutes: [String] = []
     var dnsServers: [String] = []
     var searchDomains: [String] = []
     var dnsSuffixes: [String] = []
@@ -109,7 +111,9 @@ final class UnifiedTunnelProvider: NEPacketTunnelProvider {
     private var dnsSuffixCache: [String: [String]] = [:]
 
     private var applyingSettings = false
-    private var reapplyPending = false
+    private var settingsTicket = 0    // last ticket issued to a caller
+    private var settingsApplied = 0   // highest ticket covered by a finished apply
+    private var settingsWaiters: [(ticket: Int, cont: CheckedContinuation<Void, Never>)] = []
 
     private struct DNSKey: Hashable { let profileID: String; let port: UInt16 }
     private struct DNSEntry { let hostPort: UInt16; let at: Date }
@@ -875,11 +879,11 @@ final class UnifiedTunnelProvider: NEPacketTunnelProvider {
                 if !derived.isEmpty {
                     (routes, base) = (derived,
                                       AppliedRoutesReport(source: .auto, routes: derived,
-                                                          explanation: "best guess from server hints — edit if a service can't be reached"))
+                                                          explanation: "best guess from server hints; edit if a service can't be reached"))
                 } else {
                     (routes, base) = (["0.0.0.0/0"],
                                       AppliedRoutesReport(source: .full, routes: ["0.0.0.0/0"],
-                                                          explanation: "no usable hints from server — using full tunnel"))
+                                                          explanation: "no usable hints from server, using full tunnel"))
                 }
             }
         }
@@ -889,6 +893,7 @@ final class UnifiedTunnelProvider: NEPacketTunnelProvider {
         report.assignedIP = kUtunInnerIPString    // host locates the shared utun by U0
         report.dnsSuffixes = mu.dnsSuffixes
         report.resolvedHostRoutes = mu.domainRoutes
+        report.dnsLearnedRoutes = mu.dnsLearnedRoutes
         report.ipv6Routes = mu.routeCIDRs6
         mu.report = report
     }
@@ -905,7 +910,7 @@ final class UnifiedTunnelProvider: NEPacketTunnelProvider {
     private func routerPrefixesLocked(_ mu: ManagedUpstream) -> [RoutePrefix] {
         let isFull = mu.routeCIDRs == ["0.0.0.0/0"]
         var cidrs = mu.routeCIDRs
-        if !isFull { cidrs += mu.dnsServers.map { "\($0)/32" } + mu.domainRoutes }
+        if !isFull { cidrs += mu.dnsServers.map { "\($0)/32" } + mu.domainRoutes + mu.dnsLearnedRoutes }
         return cidrs.compactMap(RoutePrefix.parse)
     }
 
@@ -918,21 +923,40 @@ final class UnifiedTunnelProvider: NEPacketTunnelProvider {
     // MARK: settings (union of all connected upstreams)
 
     private func applySettings() async {
-        let proceed = withLock { () -> Bool in
-            if applyingSettings { reapplyPending = true; return false }
+        let (ticket, isRunner) = withLock { () -> (Int, Bool) in
+            settingsTicket += 1
+            if applyingSettings { return (settingsTicket, false) }
             applyingSettings = true
-            return true
+            return (settingsTicket, true)
         }
-        guard proceed else { return }
+        if isRunner {
+            await runSettingsApplyLoop()
+            return
+        }
+        await withCheckedContinuation { (cont: CheckedContinuation<Void, Never>) in
+            let alreadyCovered = withLock { () -> Bool in
+                if settingsApplied >= ticket { return true }
+                settingsWaiters.append((ticket, cont))
+                return false
+            }
+            if alreadyCovered { cont.resume() }
+        }
+    }
+
+    private func runSettingsApplyLoop() async {
         while true {
+            let covers = withLock { settingsTicket }
             do { try await applySettingsOnce() }
             catch { log.error("applySettings failed: \(error.localizedDescription, privacy: .public)") }
-            let again = withLock { () -> Bool in
-                let a = reapplyPending
-                reapplyPending = false
-                if !a { applyingSettings = false }
-                return a
+            let (resumable, again) = withLock { () -> ([CheckedContinuation<Void, Never>], Bool) in
+                settingsApplied = covers
+                let ready = settingsWaiters.filter { $0.ticket <= covers }.map(\.cont)
+                settingsWaiters.removeAll { $0.ticket <= covers }
+                let more = settingsTicket > covers
+                if !more { applyingSettings = false }
+                return (ready, more)
             }
+            resumable.forEach { $0.resume() }
             if !again { break }
         }
     }
@@ -961,6 +985,7 @@ final class UnifiedTunnelProvider: NEPacketTunnelProvider {
                 partialRoutes += u.routeCIDRs
                 partialRoutes += u.dnsServers.map { "\($0)/32" }
                 partialRoutes += u.domainRoutes
+                partialRoutes += u.dnsLearnedRoutes
             }
             if !u.assignedIP6.isZero {
                 anyV6Upstream = true
@@ -1099,10 +1124,37 @@ extension UnifiedTunnelProvider: RouterDNSHook {
         guard let (sp, dp, payload) = DnsSuffixAutoDetect.parseUDPInIPv4(packet), sp == 53 else { return }
         let entry = withLock { dnsMap.removeValue(forKey: DNSKey(profileID: upstream.profileID, port: dp)) }
         guard let entry else { return }
-        let resp = DnsSuffixAutoDetect.buildIPv4UDPPacket(
-            srcIP: UnifiedDNSProxy.proxyIPString, dstIP: kUtunInnerIPString,
-            srcPort: 53, dstPort: entry.hostPort, payload: payload, ipID: dp)
-        if !resp.isEmpty { flowAdapter?.writeOutbound([resp]) }
+        let profileID = upstream.profileID
+        Task { [self] in
+            await installLearnedRoutes(from: payload, upstreamID: profileID)
+            let resp = DnsSuffixAutoDetect.buildIPv4UDPPacket(
+                srcIP: UnifiedDNSProxy.proxyIPString, dstIP: kUtunInnerIPString,
+                srcPort: 53, dstPort: entry.hostPort, payload: payload, ipID: dp)
+            if !resp.isEmpty { flowAdapter?.writeOutbound([resp]) }
+        }
+    }
+
+    private static let maxLearnedIPs = 512
+
+    private func installLearnedRoutes(from dns: Data, upstreamID: String) async {
+        let answers = UnifiedDNSProxy.aRecordIPs(from: dns).filter(UnifiedDNSProxy.isLearnableIP)
+        guard !answers.isEmpty else { return }
+        let learned: (v4: [RoutePrefix], v6: [RoutePrefix6], routes: [String])? = withLock {
+            guard let mu = upstreams[upstreamID], mu.state == .connected,
+                  mu.routeCIDRs != ["0.0.0.0/0"],
+                  mu.dnsLearnedIPs.count < Self.maxLearnedIPs else { return nil }
+            let existing = routerPrefixesLocked(mu)
+            let fresh = answers.filter { ip in !existing.contains { $0.contains(ip) } }
+            guard !fresh.isEmpty else { return nil }
+            mu.dnsLearnedIPs.formUnion(fresh)
+            mu.dnsLearnedRoutes = UnifiedDNSProxy.coalesceLearnedRoutes(mu.dnsLearnedIPs)
+            if var r = mu.report { r.dnsLearnedRoutes = mu.dnsLearnedRoutes; mu.report = r }
+            return (routerPrefixesLocked(mu), routerPrefixes6Locked(mu), mu.dnsLearnedRoutes)
+        }
+        guard let learned else { return }
+        log.notice("dns proxy: learned route(s) for \(upstreamID, privacy: .public) → \(learned.routes.joined(separator: " "), privacy: .public)")
+        router.updateRoutes(profileID: upstreamID, prefixes: learned.v4, prefixes6: learned.v6)
+        await applySettings()
     }
 
     private func allocateDNSPortLocked(profileID: String, hostPort: UInt16) -> UInt16 {

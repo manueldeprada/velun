@@ -124,14 +124,27 @@ enum ProviderConfig: Codable, Equatable {
         if case .wireguard(let c) = self { return c }; return nil
     }
 
-    enum CodingKeys: String, CodingKey { case kind, sslVPN = "openConnect", wireguard }
+    private static let legacyKindTag = "openConnect"
+    private static let legacyPayloadKey = "openConnect"
+
+    enum CodingKeys: String, CodingKey { case kind, sslVPN, wireguard }
+    private struct LegacyCodingKeys: CodingKey {
+        var stringValue: String
+        init?(stringValue: String) { self.stringValue = stringValue }
+        var intValue: Int? { nil }
+        init?(intValue: Int) { nil }
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
-        let kind = (try? c.decode(String.self, forKey: .kind)) ?? "openConnect"
+        let kind = (try? c.decode(String.self, forKey: .kind)) ?? Self.legacyKindTag
         switch kind {
         case "wireguard":
             self = .wireguard(try c.decode(WireGuardConfig.self, forKey: .wireguard))
+        case Self.legacyKindTag:
+            let legacy = try decoder.container(keyedBy: LegacyCodingKeys.self)
+            let key = LegacyCodingKeys(stringValue: Self.legacyPayloadKey)!
+            self = .sslVPN(try legacy.decode(SSLVPNFamilyConfig.self, forKey: key))
         default:
             self = .sslVPN(try c.decode(SSLVPNFamilyConfig.self, forKey: .sslVPN))
         }
@@ -141,7 +154,7 @@ enum ProviderConfig: Codable, Equatable {
         var c = encoder.container(keyedBy: CodingKeys.self)
         switch self {
         case .sslVPN(let v):
-            try c.encode("openConnect", forKey: .kind)
+            try c.encode("sslVPN", forKey: .kind)
             try c.encode(v, forKey: .sslVPN)
         case .wireguard(let v):
             try c.encode("wireguard", forKey: .kind)
@@ -207,5 +220,23 @@ struct VPNProfile: Identifiable, Codable, Equatable {
         }
         if changed { config = .sslVPN(oc) }
         return changed
+    }
+
+    @discardableResult
+    mutating func normalizeSplitRoutes() -> Bool {
+        let canonical = RouteList.normalized(from: config.splitRoutes)
+        guard canonical != config.splitRoutes else { return false }
+        config.splitRoutes = canonical
+        return true
+    }
+
+    @discardableResult
+    mutating func normalizeTunnelDomains() -> Bool {
+        guard case .sslVPN(var oc) = config else { return false }
+        let canonical = DomainRouteResolver.normalizedList(from: oc.tunnelDomains)
+        guard canonical != oc.tunnelDomains else { return false }
+        oc.tunnelDomains = canonical
+        config = .sslVPN(oc)
+        return true
     }
 }

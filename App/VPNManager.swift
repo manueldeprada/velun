@@ -342,6 +342,7 @@ class VPNManager: ObservableObject {
                     await MainActor.run {
                         self?.appliedRoutes[id] = r
                         self?.promoteAutoRoutesIfNeeded(profileID: id, report: r)
+                        self?.promoteLearnedRoutesIfNeeded(profileID: id, report: r)
                         self?.startConnectionMonitor(for: id)
                     }
                     return
@@ -355,10 +356,20 @@ class VPNManager: ObservableObject {
         let startTime = Date()
 
         monitorTasks[profileID] = Task { [weak self] in
+            var tick = 0
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                 guard !Task.isCancelled else { break }
                 guard self?.statuses[profileID] == .connected else { break }
+                tick += 1
+
+                if tick % 5 == 0, let ne = self?.backends[profileID] as? NEControllable,
+                   var fresh = await ne.fetchAppliedRoutes(),
+                   fresh.dnsLearnedRoutes != self?.appliedRoutes[profileID]?.dnsLearnedRoutes {
+                    fresh.routeConflictWarning = self?.appliedRoutes[profileID]?.routeConflictWarning
+                    self?.appliedRoutes[profileID] = fresh
+                    self?.promoteLearnedRoutesIfNeeded(profileID: profileID, report: fresh)
+                }
 
                 let report = self?.appliedRoutes[profileID]
 
@@ -486,6 +497,19 @@ class VPNManager: ObservableObject {
         profiles[idx].config.partialEnabled = true
         persist()
         logger.info("[\(self.profiles[idx].name)] promoted auto-detected routes: \(joined)")
+    }
+
+    private func promoteLearnedRoutesIfNeeded(profileID: UUID,
+                                              report: AppliedRoutesReport) {
+        guard report.source == .auto || report.source == .manual,
+              !report.dnsLearnedRoutes.isEmpty,
+              let idx = profiles.firstIndex(where: { $0.id == profileID }),
+              profiles[idx].config.partialEnabled else { return }
+        guard let merged = RouteFieldMerge.merge(field: profiles[idx].config.splitRoutes,
+                                                 learned: report.dnsLearnedRoutes) else { return }
+        profiles[idx].config.splitRoutes = merged
+        persist()
+        logger.info("[\(self.profiles[idx].name)] saved DNS-learned routes: \(merged)")
     }
 
     // Waits for the old tunnel to fully tear down before reconnecting.

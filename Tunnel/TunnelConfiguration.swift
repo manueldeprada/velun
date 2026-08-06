@@ -215,5 +215,6 @@ struct AppliedRoutesReport: Codable, Equatable {
     var dnsSuffixes: [String] = []
     var ipv6Routes: [String] = []
     var resolvedHostRoutes: [String] = []
+    var dnsLearnedRoutes: [String] = []
 }
 

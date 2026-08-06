@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import OSLog
 import UniformTypeIdentifiers
 
 // MARK: – Root view
@@ -48,7 +49,7 @@ struct ConfigurationView: View {
                 AboutScreenGateView()
             }
         }
-        .frame(width: 380)
+        .frame(width: 440)
         .alert(item: $importAlert) { a in
             if let label = a.actionLabel, let action = a.action {
                 return Alert(title: Text(a.title), message: Text(a.message),
@@ -158,7 +159,7 @@ struct ConfigurationView: View {
                 }
                 .padding(8)
             }
-            .frame(maxHeight: 520)
+            .frame(maxHeight: 560)
             .onChange(of: vpn.newlyAddedProfileID) { id in
                 guard let id else { return }
                 withAnimation { proxy.scrollTo(id, anchor: .top) }
@@ -167,7 +168,15 @@ struct ConfigurationView: View {
                 guard let id else { return }
                 withAnimation { proxy.scrollTo(id, anchor: .top) }
             }
+            .onChange(of: firstPendingMFAProfileID) { id in
+                guard let id else { return }
+                withAnimation { proxy.scrollTo(id, anchor: .top) }
+            }
         }
+    }
+
+    private var firstPendingMFAProfileID: UUID? {
+        vpn.profiles.first { vpn.mfaChallenges[$0.id] != nil }?.id
     }
 
     // MARK: – First-run system-import notice
@@ -220,7 +229,7 @@ struct ConfigurationView: View {
                 welcomeBullet("qrcode.viewfinder",
                     "Two-factor login? Scan your authenticator's QR code once and velun fills in the 6-digit code for you on every connect.")
                 welcomeBullet("arrow.triangle.branch",
-                    "Split tunneling: You can send only your work networks through the VPN and keep everything else on your normal connection.")
+                    "Partial VPN: send only your work networks through the VPN and keep everything else on your normal connection (also called split tunneling).")
                 welcomeBullet("person.2",
                     "Has a friend already set up velun? Ask them to share the connection with you, then use \"Import from URL…\" below.")
             }
@@ -462,12 +471,12 @@ struct AdvancedPopover: View {
         if vpn.killSwitchActive { return "Active. All traffic is confined to the VPN." }
         if vpn.killSwitchPending {
             return vpn.killSwitchEnabled
-                ? "Not applied yet. This full tunnel started before the kill switch could be set."
+                ? "Not applied yet. This full VPN connection started before the kill switch could be set."
                 : "Still applied to the running tunnel. Restart to remove it."
         }
         return vpn.killSwitchEnabled
-            ? "Inactive. No full tunnel is connected."
-            : "Off. Traffic is not blocked if a full tunnel drops."
+            ? "Inactive. No full VPN is connected."
+            : "Off. Traffic is not blocked if a full VPN connection drops."
     }
 
     var body: some View {
@@ -509,10 +518,10 @@ struct AdvancedPopover: View {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Kill switch").font(.caption).foregroundStyle(.secondary)
                 Toggle(isOn: $vpn.killSwitchEnabled) {
-                    Text("Block traffic outside the VPN on full tunnels").font(.caption)
+                    Text("Block traffic outside the VPN on full VPN connections").font(.caption)
                 }
                 .toggleStyle(.checkbox)
-                Text("When a full tunnel is active, strictly all traffic is forced through the VPN. Partial tunnels are unaffected.")
+                Text("When a full VPN is active, strictly all traffic is forced through the VPN. Partial VPN connections are unaffected.")
                     .font(.caption2).foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -622,8 +631,6 @@ struct ProfileCard: View {
     @State private var isExpanded     = false
     @State private var draft:          VPNProfile
     @State private var splitRoutingOn: Bool
-    @State private var isSaving       = false
-    @State private var saveSuccess    = false
     @State private var showError      = false
     @State private var mfaCode        = ""
     @State private var shareBlob:     String?    // non-nil → Share sheet shown
@@ -632,7 +639,18 @@ struct ProfileCard: View {
     @State private var showCommandsManager = false   // "Commands through VPN" CRUD sheet
     @State private var runCommand: ScriptedCommand? = nil   // non-nil → CommandRunSheet shown
 
-    private enum Field: Hashable { case name, host, username, password, wgConf }
+    @State private var cardOvershoot    = CGFloat.zero
+    @State private var cardHeight       = CGFloat.zero
+    @State private var summaryRowHeight = CGFloat.zero
+
+    @State private var flashSaved = false   // transient "Saved ✓" after an implicit save
+
+    @State private var passwordRevealed = false
+    @State private var totpRevealed     = false
+
+    private enum Field: Hashable {
+        case name, host, username, password, wgConf, splitRoutes, tunnelDomains, mfaCode
+    }
     @FocusState private var focusedField: Field?
 
     init(profile: VPNProfile) {
@@ -654,6 +672,17 @@ struct ProfileCard: View {
     var body: some View {
         VStack(spacing: 0) {
             summaryRow
+                .background(RowHeightReporter { h in
+                    guard abs(h - summaryRowHeight) > 0.5 else { return }
+                    summaryRowHeight = h
+                    stickyLog.debug("state: summaryRowHeight=\(h, format: .fixed(precision: 1), privacy: .public)")
+                })
+                .background(stickyOffset > 0 ? Color(nsColor: .controlBackgroundColor) : .clear)
+                .overlay(alignment: .bottom) {
+                    if stickyOffset > 0 { Divider() }
+                }
+                .offset(y: stickyOffset)
+                .zIndex(1)
             if shouldShowAlertPanel {
                 Divider()
                 alertPanel
@@ -676,19 +705,44 @@ struct ProfileCard: View {
             }
         }
         .background(RoundedRectangle(cornerRadius: 8).fill(Color(nsColor: .controlBackgroundColor)))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.secondary.opacity(0.2)))
+        .background(CardScrollReporter { overshoot, height in
+            if abs(overshoot - cardOvershoot) > 0.5 {
+                cardOvershoot = overshoot
+                stickyLog.debug("state: cardOvershoot=\(overshoot, format: .fixed(precision: 1), privacy: .public) expanded=\(isExpanded, privacy: .public) rowH=\(summaryRowHeight, format: .fixed(precision: 1), privacy: .public) offset=\(stickyOffset, format: .fixed(precision: 1), privacy: .public)")
+            }
+            if abs(height - cardHeight) > 0.5       { cardHeight = height }
+        })
         .animation(.spring(duration: 0.2), value: isExpanded)
         .animation(.spring(duration: 0.2), value: mfaPending != nil)
         .animation(.spring(duration: 0.2), value: vpn.appliedRoutes[profile.id])
         .animation(.spring(duration: 0.2), value: showKillSwitchGap)
         .animation(.spring(duration: 0.2), value: shouldShowAlertPanel)
+        .animation(.spring(duration: 0.2), value: flashSaved)
+        .animation(.spring(duration: 0.2), value: hasChanges)
         .onChange(of: profile) { newProfile in
             if !isExpanded {
                 draft = newProfile
                 splitRoutingOn = newProfile.config.partialEnabled
             }
         }
+        .onChange(of: focusedField) { newFocus in
+            if newFocus != .tunnelDomains { draft.normalizeTunnelDomains() }
+            if newFocus != .splitRoutes   { draft.normalizeSplitRoutes() }
+        }
+        .onChange(of: mfaPending != nil) { pending in
+            guard pending else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                focusedField = .mfaCode
+            }
+        }
         .onAppear {
+            if mfaPending != nil {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    focusedField = .mfaCode
+                }
+            }
             if vpn.newlyAddedProfileID == profile.id {
                 isExpanded = true
                 vpn.newlyAddedProfileID = nil
@@ -710,8 +764,19 @@ struct ProfileCard: View {
 
     private func saveDraftIfChanged() {
         draft.normalizeServerAddress()
+        draft.normalizeTunnelDomains()
+        draft.normalizeSplitRoutes()
         guard hasChanges, saveAllowed else { return }
         Task { await vpn.save(profile: draft) }
+        flashSavedBriefly()
+    }
+
+    private func flashSavedBriefly() {
+        flashSaved = true
+        Task {
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            await MainActor.run { flashSaved = false }
+        }
     }
 
     @ViewBuilder
@@ -742,6 +807,14 @@ struct ProfileCard: View {
                         .foregroundStyle(.secondary)
                         .textSelection(.enabled)
                         .fixedSize(horizontal: false, vertical: true)
+                }
+                if !report.dnsLearnedRoutes.isEmpty && report.source != .full {
+                    Text("Also " + report.dnsLearnedRoutes.joined(separator: ", ") + " (learned from DNS answers)")
+                        .font(.system(.caption2, design: .monospaced))
+                        .foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
                 if report.source == .full {
                     let carried = !report.ipv6Routes.isEmpty && vpn.ipv6RoutedViaTunnel
@@ -915,6 +988,11 @@ struct ProfileCard: View {
 
     // MARK: – Summary row
 
+    private var stickyOffset: CGFloat {
+        guard isExpanded, summaryRowHeight > 0, cardOvershoot > 0 else { return 0 }
+        return min(cardOvershoot, cardHeight - summaryRowHeight)
+    }
+
     private var summaryRow: some View {
         HStack(spacing: 8) {
             HStack(spacing: 8) {
@@ -929,10 +1007,22 @@ struct ProfileCard: View {
 
             Spacer()
 
-            if status == .connected && profile.config.partialEnabled {
+            if flashSaved {
+                Label("Saved", systemImage: "checkmark")
+                    .font(.caption2).foregroundStyle(.green)
+            } else if status == .connected && profile.config.partialEnabled {
                 tunnelModeMenu
             } else {
                 Text(summaryStatusLabel).font(.caption2).foregroundStyle(.secondary)
+            }
+
+            if isExpanded && hasChanges {
+                Button("Save") { saveAndCollapse() }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                    .disabled(!saveAllowed)
+                    .help("Save and close (⌘S)")
+                    .keyboardShortcut("s", modifiers: .command)
             }
 
             commandsMenu
@@ -943,10 +1033,19 @@ struct ProfileCard: View {
         .onTapGesture { toggleExpand() }
     }
 
+    private func saveAndCollapse() {
+        saveDraftIfChanged()
+        withAnimation { isExpanded = false }
+    }
+
     private func toggleExpand() {
         if isExpanded { saveDraftIfChanged() }
         withAnimation { isExpanded.toggle() }
-        if isExpanded { draft = profile }
+        if isExpanded {
+            draft = profile
+            passwordRevealed = false
+            totpRevealed = false
+        }
     }
 
     @ViewBuilder
@@ -980,16 +1079,16 @@ struct ProfileCard: View {
     private var tunnelModeMenu: some View {
         if vpn.fullTunnelOverrides.contains(profile.id) {
             Menu {
-                Button("Restore split routing") { vpn.reconnectWithSplits(profile) }
+                Button("Back to partial VPN") { vpn.reconnectWithSplits(profile) }
             } label: {
-                Text("Full").font(.caption2).foregroundStyle(.blue)
+                Text("Full VPN").font(.caption2).foregroundStyle(.blue)
             }
             .menuStyle(.borderlessButton).fixedSize()
         } else {
             Menu {
-                Button("Route all traffic") { vpn.reconnectAsFull(profile) }
+                Button("Switch to full VPN") { vpn.reconnectAsFull(profile) }
             } label: {
-                Text("Partial").font(.caption2).foregroundStyle(.orange)
+                Text("Partial VPN").font(.caption2).foregroundStyle(.orange)
             }
             .menuStyle(.borderlessButton).fixedSize()
         }
@@ -1085,25 +1184,36 @@ struct ProfileCard: View {
             if status.canDisconnect {
                 Button("Disconnect") { vpn.userDisconnect(profile) }
                     .foregroundStyle(.red)
+                    .buttonStyle(.bordered)
+            } else if canConnect && !(isExpanded && hasChanges) {
+                connectAction
+                    .buttonStyle(.borderedProminent)
+            } else if canConnect {
+                connectAction
+                    .buttonStyle(.bordered)
             } else {
-                Button("Connect") {
-                    guard canConnect else {
-                        if !keychainLoadFailed { expandToFirstMissingField() }
-                        return
-                    }
-                    if isExpanded {
-                        saveDraftIfChanged()
-                        withAnimation { isExpanded = false }
-                    }
-                    let target = hasChanges ? draft : profile
-                    vpn.connect(target)
-                }
-                .opacity(canConnect ? 1 : 0.55)
-                .help(canConnectReason ?? "")
+                connectAction
+                    .opacity(0.55)
+                    .help(canConnectReason ?? "")
+                    .buttonStyle(.bordered)
             }
         }
-        .buttonStyle(.bordered)
         .controlSize(.small)
+    }
+
+    private var connectAction: some View {
+        Button("Connect") {
+            guard canConnect else {
+                if !keychainLoadFailed { expandToFirstMissingField() }
+                return
+            }
+            if isExpanded {
+                saveDraftIfChanged()
+                withAnimation { isExpanded = false }
+            }
+            let target = hasChanges ? draft : profile
+            vpn.connect(target)
+        }
     }
 
     // MARK: – MFA section
@@ -1128,6 +1238,7 @@ struct ProfileCard: View {
             HStack(spacing: 6) {
                 SecureField("Verification code", text: $mfaCode)
                     .textFieldStyle(.roundedBorder)
+                    .focused($focusedField, equals: .mfaCode)
                     .onSubmit { submitMFA() }
                 Button("Submit") { submitMFA() }
                     .buttonStyle(.borderedProminent)
@@ -1150,27 +1261,10 @@ struct ProfileCard: View {
         VStack(alignment: .leading, spacing: 8) {
 
             HStack(spacing: 6) {
-                Button {
-                    draft.normalizeServerAddress()
-                    isSaving = true
-                    Task {
-                        await vpn.save(profile: draft)
-                        await MainActor.run { isSaving = false; saveSuccess = true }
-                        try? await Task.sleep(nanoseconds: 1_500_000_000)
-                        await MainActor.run { saveSuccess = false }
-                    }
-                } label: {
-                    if isSaving         { Label("Saving",  systemImage: "arrow.clockwise") }
-                    else if saveSuccess { Label("Saved",   systemImage: "checkmark") }
-                    else                { Label("Save",    systemImage: "square.and.arrow.down") }
-                }
-                .disabled(isSaving || saveSuccess || !saveAllowed)
-                .help("Save this connection")
-
-                if hasChanges && !saveSuccess {
+                if hasChanges {
                     Button("Cancel") {
                         draft = profile
-                        splitRoutingOn = !profile.config.splitRoutes.isEmpty
+                        splitRoutingOn = profile.config.partialEnabled
                         withAnimation { isExpanded = false }
                     }
                 }
@@ -1249,6 +1343,7 @@ struct ProfileCard: View {
             splitRoutingSection
         }
         .padding(10)
+        .onExitCommand { toggleExpand() }
         .sheet(item: Binding(
             get: { shareBlob.map { ShareBlob(text: $0) } },
             set: { shareBlob = $0?.text }
@@ -1320,18 +1415,32 @@ struct ProfileCard: View {
             field("Group", value: oc.group, placeholder: "(optional)")
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        secureField("Password", value: oc.password, focus: .password,
+        secureField("Password", value: oc.password, revealed: $passwordRevealed,
+                    focus: .password,
                     missing: missingRequiredFields.contains(.password))
         VStack(alignment: .leading, spacing: 2) {
-            Text("2FA automation (TOTP secret, not a code)")
+            Text("2FA automation (TOTP secret)")
                 .font(.caption).foregroundStyle(.secondary)
             HStack(spacing: 6) {
-                SecureField("base32 secret, not the 6-digit code", text: oc.totpSecret)
-                    .textFieldStyle(.roundedBorder)
-                    .onChange(of: oc.totpSecret.wrappedValue) { v in
-                        let clean = v.components(separatedBy: .newlines).joined()
-                        if clean != v { oc.totpSecret.wrappedValue = clean }
+                Group {
+                    if totpRevealed {
+                        TextField("base32 secret, not the 6-digit code", text: oc.totpSecret)
+                    } else {
+                        SecureField("base32 secret, not the 6-digit code", text: oc.totpSecret)
                     }
+                }
+                .textFieldStyle(.roundedBorder)
+                .overlay(RoundedRectangle(cornerRadius: 5)
+                    .stroke(Color.red.opacity(totpFieldIssue != nil ? 0.6 : 0)))
+                .onChange(of: oc.totpSecret.wrappedValue) { v in
+                    let clean = v.components(separatedBy: .newlines).joined()
+                    if clean != v { oc.totpSecret.wrappedValue = clean }
+                }
+                Button { totpRevealed.toggle() } label: {
+                    Image(systemName: totpRevealed ? "eye.slash" : "eye")
+                }
+                .buttonStyle(.bordered)
+                .help(totpRevealed ? "Hide" : "Show")
                 Button { showQRScanner = true } label: {
                     Image(systemName: "qrcode.viewfinder")
                 }
@@ -1346,9 +1455,16 @@ struct ProfileCard: View {
                     TOTPHelpPopover()
                 }
             }
-            Text("Optional. This is the long secret your authenticator app was set up with, not the 6-digit code it shows: velun uses it to generate the codes itself. Scan it with the QR button, or leave this empty to type the code on every connect.")
-                .font(.caption2).foregroundStyle(.tertiary)
-                .fixedSize(horizontal: false, vertical: true)
+            switch totpFieldIssue {
+            case .looksLikeCode:
+                totpWarning("This looks like a one-time code, which expires in 30 seconds and can't be reused. velun needs the long secret your authenticator generates codes from: scan its QR export with the QR button, or click ? to see where to find it.")
+            case .invalidBase32:
+                totpWarning("This can't be a TOTP secret: secrets use only letters A to Z and digits 2 to 7 (spaces and dashes are fine). If you pasted an otpauth:// link or a screenshot's text, scan the QR code with the QR button instead.")
+            case nil:
+                Text("Optional. The long seed your authenticator app generates 6-digit codes from. Scan it with the QR button, or leave empty to type a code on each connect.")
+                    .font(.caption2).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         clientCertRow
     }
@@ -1407,6 +1523,31 @@ struct ProfileCard: View {
         draft.config = .sslVPN(oc)
     }
 
+    private enum TOTPFieldIssue { case looksLikeCode, invalidBase32 }
+
+    private var totpFieldIssue: TOTPFieldIssue? {
+        var s = draft.sslVPNFamily.totpSecret
+        if s.lowercased().hasPrefix("base32:") { s = String(s.dropFirst(7)) }
+        let compact = s.uppercased().filter { !$0.isWhitespace && $0 != "-" }
+        guard !compact.isEmpty else { return nil }
+        if (6...8).contains(compact.count) && compact.allSatisfy(\.isNumber) {
+            return .looksLikeCode
+        }
+        let alphabet = Set("ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=")
+        if !compact.allSatisfy({ alphabet.contains($0) }) { return .invalidBase32 }
+        return nil
+    }
+
+    private func totpWarning(_ text: String) -> some View {
+        HStack(alignment: .top, spacing: 4) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.caption2).foregroundStyle(.red)
+            Text(text)
+                .font(.caption2).foregroundStyle(.red)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
     private var sslVPNBinding: BoundSSLVPN {
         BoundSSLVPN(draft: $draft)
     }
@@ -1447,54 +1588,73 @@ struct ProfileCard: View {
     private var splitRoutingSection: some View {
         VStack(alignment: .leading, spacing: 3) {
             Toggle(isOn: splitRoutingBinding) {
-                Text("Split routing").font(.caption).foregroundStyle(.secondary)
+                Text("Use Partial VPN by default").font(.caption).foregroundStyle(.secondary)
             }
             .toggleStyle(.checkbox)
 
             if splitRoutingOn {
-                let isWG = draft.config.wireguard != nil
-                let routesEmpty = draft.config.splitRoutes
-                    .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-
-                TextField(autoDetectPlaceholder, text: splitRoutesBinding)
-                    .textFieldStyle(.roundedBorder)
-
-                if !isWG && routesEmpty {
-                    HStack(alignment: .top, spacing: 4) {
-                        Image(systemName: "wand.and.stars")
-                            .font(.caption2).foregroundStyle(.blue)
-                        Text("Suggest subnets from VPN server hints (X-CSTP-SPLIT-INCLUDE, " +
-                             "fallback to /16 of each VPN-DNS server and search domain). " +
-                             "If services are unreachable, add CIDRs manually here.")
-                            .font(.caption2).foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                } else if isWG && routesEmpty {
-                    Text("Use AllowedIPs as written in the WireGuard configuration.")
-                        .font(.caption2).foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                } else {
-                    Text(isWG
-                         ? "Override AllowedIPs in the conf for partial-tunnel routing"
-                         : "Comma-separated domains to be routed through the VPN")
-                        .font(.caption2).foregroundStyle(.tertiary)
-                        .fixedSize(horizontal: false, vertical: true)
+                HStack(alignment: .top, spacing: 8) {
+                    RoundedRectangle(cornerRadius: 1)
+                        .fill(Color.secondary.opacity(0.25))
+                        .frame(width: 2)
+                    partialVPNFields
                 }
-
-                if !isWG {
-                    TextField("Example: portal.example.org,mail.example.org",
-                              text: tunnelDomainsBinding)
-                        .textFieldStyle(.roundedBorder)
-                }
+                .padding(.leading, 4)
             } else {
                 HStack(alignment: .top, spacing: 4) {
                     Image(systemName: "lock.shield")
                         .font(.caption2).foregroundStyle(.blue)
-                    Text("Full tunnel: every app is forced through the VPN, and all traffic " +
-                         "is blocked if the tunnel drops, with no leaks to your real network.")
+                    Text("Full VPN: every app is forced through the VPN. Enable the kill " +
+                         "switch in Advanced to also block all traffic if the tunnel drops.")
                         .font(.caption2).foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var partialVPNFields: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            let isWG = draft.config.wireguard != nil
+            let routesEmpty = draft.config.splitRoutes
+                .trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+            Text("Only use the VPN for these networks:")
+                .font(.caption2).foregroundStyle(.secondary)
+            TextField(autoDetectPlaceholder, text: splitRoutesBinding)
+                .textFieldStyle(.roundedBorder)
+                .focused($focusedField, equals: .splitRoutes)
+                .onSubmit { draft.normalizeSplitRoutes() }
+
+            if !isWG && routesEmpty {
+                HStack(alignment: .top, spacing: 4) {
+                    Image(systemName: "wand.and.stars")
+                        .font(.caption2).foregroundStyle(.blue)
+                    Text("Suggest subnets from VPN server hints (X-CSTP-SPLIT-INCLUDE, " +
+                         "fallback to /16 of each VPN-DNS server and search domain). " +
+                         "If services are unreachable, add CIDRs manually here.")
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            } else if isWG && routesEmpty {
+                Text("Use AllowedIPs as written in the WireGuard configuration.")
+                    .font(.caption2).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if isWG {
+                Text("Override AllowedIPs in the conf for partial VPN routing")
+                    .font(.caption2).foregroundStyle(.tertiary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            if !isWG {
+                Text("Also tunnel these hostnames:")
+                    .font(.caption2).foregroundStyle(.secondary)
+                TextField("Example: portal.example.org,mail.example.org",
+                          text: tunnelDomainsBinding)
+                    .textFieldStyle(.roundedBorder)
+                    .focused($focusedField, equals: .tunnelDomains)
+                    .onSubmit { draft.normalizeTunnelDomains() }
             }
         }
     }
@@ -1569,29 +1729,135 @@ struct ProfileCard: View {
     }
 
     private func secureField(_ label: String, value: Binding<String>,
+                             revealed: Binding<Bool>,
                              help: String? = nil, focus: Field? = nil, missing: Bool = false) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(missing ? "\(label) (required)" : label)
                 .font(.caption).foregroundStyle(missing ? .red : .secondary)
-            Group {
-                if let focus {
-                    SecureField("••••••••", text: value)
-                        .focused($focusedField, equals: focus)
-                } else {
-                    SecureField("••••••••", text: value)
+            HStack(spacing: 6) {
+                Group {
+                    if let focus {
+                        if revealed.wrappedValue {
+                            TextField("••••••••", text: value)
+                                .focused($focusedField, equals: focus)
+                        } else {
+                            SecureField("••••••••", text: value)
+                                .focused($focusedField, equals: focus)
+                        }
+                    } else if revealed.wrappedValue {
+                        TextField("••••••••", text: value)
+                    } else {
+                        SecureField("••••••••", text: value)
+                    }
                 }
-            }
-            .textFieldStyle(.roundedBorder)
-            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.red.opacity(missing ? 0.6 : 0)))
-            .onChange(of: value.wrappedValue) { v in
-                let clean = v.components(separatedBy: .newlines).joined()
-                if clean != v { value.wrappedValue = clean }
+                .textFieldStyle(.roundedBorder)
+                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.red.opacity(missing ? 0.6 : 0)))
+                .onChange(of: value.wrappedValue) { v in
+                    let clean = v.components(separatedBy: .newlines).joined()
+                    if clean != v { value.wrappedValue = clean }
+                }
+                Button { revealed.wrappedValue.toggle() } label: {
+                    Image(systemName: revealed.wrappedValue ? "eye.slash" : "eye")
+                }
+                .buttonStyle(.bordered)
+                .help(revealed.wrappedValue ? "Hide" : "Show")
             }
             if let h = help {
                 Text(h).font(.caption2).foregroundStyle(.tertiary)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+}
+
+private struct RowHeightReporter: NSViewRepresentable {
+    var onChange: (CGFloat) -> Void
+
+    func makeNSView(context: Context) -> HeightView {
+        let v = HeightView()
+        v.onChange = onChange
+        return v
+    }
+    func updateNSView(_ v: HeightView, context: Context) { v.onChange = onChange }
+
+    final class HeightView: NSView {
+        var onChange: ((CGFloat) -> Void)?
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+        override func layout() {
+            super.layout()
+            let h = bounds.height
+            DispatchQueue.main.async { [weak self] in
+                self?.onChange?(h)
+            }
+        }
+    }
+}
+
+private let stickyLog = Logger(subsystem: "com.manueldeprada.velun", category: "Sticky")
+
+private struct CardScrollReporter: NSViewRepresentable {
+    /// (points the card top sits above the viewport top, card height)
+    var onChange: (CGFloat, CGFloat) -> Void
+
+    func makeNSView(context: Context) -> TrackerView {
+        let v = TrackerView()
+        v.onChange = onChange
+        return v
+    }
+    func updateNSView(_ v: TrackerView, context: Context) { v.onChange = onChange }
+
+    final class TrackerView: NSView {
+        var onChange: ((CGFloat, CGFloat) -> Void)?
+        private var tokens: [NSObjectProtocol] = []
+
+        // Never swallow a click aimed at the card this view sits behind.
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            wireUp()
+        }
+
+        override func layout() {
+            super.layout()
+            if tokens.isEmpty { wireUp() }
+        }
+
+        private func wireUp() {
+            tokens.forEach(NotificationCenter.default.removeObserver)
+            tokens.removeAll()
+            guard window != nil else { return }
+            guard let clip = enclosingScrollView?.contentView else {
+                stickyLog.debug("wireUp: no enclosing scroll view yet")
+                return
+            }
+            stickyLog.debug("wireUp: observing clip view")
+            clip.postsBoundsChangedNotifications = true
+            postsFrameChangedNotifications = true
+            let nc = NotificationCenter.default
+            tokens.append(nc.addObserver(forName: NSView.boundsDidChangeNotification,
+                                         object: clip, queue: .main) { [weak self] _ in
+                self?.report()
+            })
+            tokens.append(nc.addObserver(forName: NSView.frameDidChangeNotification,
+                                         object: self, queue: .main) { [weak self] _ in
+                self?.report()
+            })
+            report()
+        }
+
+        private func report() {
+            guard let clip = enclosingScrollView?.contentView else { return }
+            let rect = convert(bounds, to: clip)
+            let overshoot = clip.bounds.minY - rect.minY
+            let height = rect.height
+            stickyLog.debug("report: overshoot=\(overshoot, format: .fixed(precision: 1), privacy: .public) height=\(height, format: .fixed(precision: 1), privacy: .public) clipMinY=\(clip.bounds.minY, format: .fixed(precision: 1), privacy: .public)")
+            DispatchQueue.main.async { [weak self] in
+                self?.onChange?(overshoot, height)
+            }
+        }
+
+        deinit { tokens.forEach(NotificationCenter.default.removeObserver) }
     }
 }
 

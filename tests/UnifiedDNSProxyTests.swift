@@ -74,3 +74,94 @@ func testDNSProxyServfail() {
 
     R.assertTrue(UnifiedDNSProxy.servfailResponse(for: Data([0, 1, 2])) == nil, "too-short → nil")
 }
+
+// MARK: – DNS-learned routes (A-answer parse + /24 coalescing)
+
+private func makeDNSResponse(qname: [String], answers: [(type: UInt16, rdata: [UInt8])],
+                             rcode: UInt8 = 0, literalName: Bool = false) -> Data {
+    var r = Data()
+    r.append(contentsOf: [0x12, 0x34, 0x81, 0x80 | rcode])          // id, QR+RD+RA, rcode
+    r.append(contentsOf: [0, 1, UInt8(answers.count >> 8), UInt8(answers.count & 0xff), 0, 0, 0, 0])
+    for label in qname {                                             // question
+        r.append(UInt8(label.utf8.count)); r.append(contentsOf: Array(label.utf8))
+    }
+    r.append(contentsOf: [0, 0, 1, 0, 1])                            // root, A, IN
+    for a in answers {
+        if literalName {
+            for label in qname { r.append(UInt8(label.utf8.count)); r.append(contentsOf: Array(label.utf8)) }
+            r.append(0)
+        } else {
+            r.append(contentsOf: [0xc0, 0x0c])                       // pointer to qname
+        }
+        r.append(contentsOf: [UInt8(a.type >> 8), UInt8(a.type & 0xff), 0, 1])   // type, IN
+        r.append(contentsOf: [0, 0, 0, 60])                          // ttl
+        r.append(contentsOf: [UInt8(a.rdata.count >> 8), UInt8(a.rdata.count & 0xff)])
+        r.append(contentsOf: a.rdata)
+    }
+    return r
+}
+
+func testDNSProxyARecordIPs() {
+    R.enter("UnifiedDNSProxy.aRecordIPs")
+    let q = ["login1", "cluster", "is", "localnet"]
+
+    let single = makeDNSResponse(qname: q, answers: [(type: 1, rdata: [10, 15, 1, 40])])
+    R.assertEqual(UnifiedDNSProxy.aRecordIPs(from: single), [0x0A0F_0128], "single A answer")
+
+    let chain = makeDNSResponse(qname: q, answers: [
+        (type: 5, rdata: [0xc0, 0x0c]),
+        (type: 1, rdata: [10, 15, 1, 40]),
+        (type: 1, rdata: [10, 15, 2, 7]),
+    ])
+    R.assertEqual(UnifiedDNSProxy.aRecordIPs(from: chain), [0x0A0F_0128, 0x0A0F_0207],
+                  "CNAME skipped, both As collected")
+
+    // AAAA (type 28, 16-byte rdata) must not be misread as v4.
+    let v6 = makeDNSResponse(qname: q, answers: [(type: 28, rdata: Array(repeating: 0x20, count: 16))])
+    R.assertEqual(UnifiedDNSProxy.aRecordIPs(from: v6), [], "AAAA ignored")
+
+    // Literal (uncompressed) answer names parse too.
+    let literal = makeDNSResponse(qname: q, answers: [(type: 1, rdata: [10, 15, 1, 40])], literalName: true)
+    R.assertEqual(UnifiedDNSProxy.aRecordIPs(from: literal), [0x0A0F_0128], "literal answer name")
+
+    // NXDOMAIN → nothing learned even if a stray answer is present.
+    let nx = makeDNSResponse(qname: q, answers: [(type: 1, rdata: [10, 15, 1, 40])], rcode: 3)
+    R.assertEqual(UnifiedDNSProxy.aRecordIPs(from: nx), [], "non-zero RCODE ignored")
+
+    // A query (QR=0) never yields answers.
+    let query = DnsSuffixAutoDetect.buildDNSQuery(txnID: 1, qname: q, qtype: 1)
+    R.assertEqual(UnifiedDNSProxy.aRecordIPs(from: query), [], "query (QR=0) ignored")
+
+    // Truncated rdata: parser stops without trapping, keeps what it had.
+    var trunc = makeDNSResponse(qname: q, answers: [
+        (type: 1, rdata: [10, 15, 1, 40]),
+        (type: 1, rdata: [10, 15, 2, 7]),
+    ])
+    trunc.removeLast(2)
+    R.assertEqual(UnifiedDNSProxy.aRecordIPs(from: trunc), [0x0A0F_0128], "truncated second answer dropped")
+}
+
+func testDNSProxyLearnableIP() {
+    R.enter("UnifiedDNSProxy.isLearnableIP")
+    R.assertTrue(UnifiedDNSProxy.isLearnableIP(0x0A0F_0128), "10.15.1.40 learnable")
+    R.assertTrue(UnifiedDNSProxy.isLearnableIP(0xC20F_8937), "194.15.137.55 learnable")
+    R.assertTrue(!UnifiedDNSProxy.isLearnableIP(0x0000_0000), "0.0.0.0 (blocklist answer) rejected")
+    R.assertTrue(!UnifiedDNSProxy.isLearnableIP(0x7F00_0001), "127.0.0.1 rejected")
+    R.assertTrue(!UnifiedDNSProxy.isLearnableIP(0xA9FE_0001), "169.254.0.1 rejected")
+    R.assertTrue(!UnifiedDNSProxy.isLearnableIP(0xE000_00FB), "224.0.0.251 (multicast) rejected")
+    R.assertTrue(!UnifiedDNSProxy.isLearnableIP(0xFFFF_FFFF), "broadcast rejected")
+}
+
+func testDNSProxyCoalesceLearnedRoutes() {
+    R.enter("UnifiedDNSProxy.coalesceLearnedRoutes")
+    R.assertEqual(UnifiedDNSProxy.coalesceLearnedRoutes([]), [], "empty set")
+    R.assertEqual(UnifiedDNSProxy.coalesceLearnedRoutes([0x0A0F_0128]),
+                  ["10.15.1.40/32"], "single IP stays /32")
+    R.assertEqual(UnifiedDNSProxy.coalesceLearnedRoutes([0x0A0F_0128, 0x0A0F_0107]),
+                  ["10.15.1.0/24"], "two IPs in one /24 merge")
+    R.assertEqual(UnifiedDNSProxy.coalesceLearnedRoutes([0x0A0F_0128, 0x0A0F_0207, 0xC20F_8937]),
+                  ["10.15.1.40/32", "10.15.2.7/32", "194.15.137.55/32"],
+                  "different /24s stay /32s, sorted")
+    R.assertEqual(UnifiedDNSProxy.coalesceLearnedRoutes([0x0A0F_0128, 0x0A0F_0107, 0x0A0F_01FE, 0xC20F_8937]),
+                  ["10.15.1.0/24", "194.15.137.55/32"], "three in one /24 still one /24")
+}

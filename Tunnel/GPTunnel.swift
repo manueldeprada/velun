@@ -123,7 +123,7 @@ final class GPTunnelBackend: SSLVPNFamilyTunnel {
         hdr.bePut32(0x1a2b3c4d, at: 0)
         hdr.bePut16(ethertype, at: 4)
         hdr.bePut16(UInt16(payload.count), at: 6)
-        // 'one' is little-endian per gpst.c. 1 for data, 0 for keepalive.
+        // 'one' is little-endian. 1 for data, 0 for keepalive.
         var one: UInt32 = isData ? 1 : 0
         withUnsafeBytes(of: &one) { hdr.replaceSubrange(8..<12, with: $0) }
         try await sendRaw(hdr + payload)

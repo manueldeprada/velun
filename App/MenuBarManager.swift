@@ -16,6 +16,7 @@ class MenuBarManager {
     private var pendingShowTask: Task<Void, Never>?
     /// Lazily created; see `fallbackAnchorView()`.
     private var fallbackAnchorWindow: NSWindow?
+    private var promptedForMFA: Set<UUID> = []
 
     private static let statusButtonWaitSeconds: TimeInterval = 3.0
     private static let statusButtonPollNanoseconds: UInt64 = 50_000_000
@@ -24,7 +25,7 @@ class MenuBarManager {
     init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         popover    = NSPopover()
-        popover.contentSize      = NSSize(width: 380, height: 480)
+        popover.contentSize      = NSSize(width: 440, height: 480)
         popover.behavior         = .transient
         popover.contentViewController = NSHostingController(
             rootView: ConfigurationView()
@@ -45,6 +46,12 @@ class MenuBarManager {
         Task { @MainActor [weak self] in
             for await statuses in VPNManager.shared.$statuses.values {
                 self?.updateIcon(statuses)
+            }
+        }
+
+        Task { @MainActor [weak self] in
+            for await challenges in VPNManager.shared.$mfaChallenges.values {
+                self?.surfaceMFAPrompts(Set(challenges.keys))
             }
         }
 
@@ -77,6 +84,23 @@ class MenuBarManager {
             await self?.waitForSettledStatusButton()
             guard !Task.isCancelled else { return }
             self?.presentPopover()
+        }
+    }
+
+    @MainActor
+    private func surfaceMFAPrompts(_ pending: Set<UUID>) {
+        promptedForMFA.formIntersection(pending)          // forget answered ones
+        popover.behavior = pending.isEmpty ? .transient : .applicationDefined
+
+        let fresh = pending.subtracting(promptedForMFA)
+        guard !fresh.isEmpty else { return }
+        promptedForMFA.formUnion(fresh)
+        log.notice("MFA code needed by \(fresh.count, privacy: .public) profile(s); revealing the popover")
+
+        if popover.isShown {
+            NSApp.activate(ignoringOtherApps: true)
+        } else {
+            showPopover()
         }
     }
 

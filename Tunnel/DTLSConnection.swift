@@ -22,6 +22,7 @@ final class DTLSConnection {
         static let dpdResp:    UInt8 = 4
         static let disconnect: UInt8 = 5
         static let keepalive:  UInt8 = 7
+        static let compressed: UInt8 = 8
     }
 
     let mtu: Int                                   // inner-packet capacity (X-DTLS-MTU)
@@ -316,6 +317,8 @@ final class DTLSConnection {
             break   // liveness already noted
         case Pkt.disconnect:
             markDead("server sent disconnect")
+        case Pkt.compressed:
+            markDead("server sent a compressed packet (no compression was advertised)")
         default:
             break
         }

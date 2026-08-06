@@ -14,11 +14,26 @@ enum Changelog {
     /// Append new entries here when shipping a release. Most recent at the top.
     static let entries: [ChangelogEntry] = [
         ChangelogEntry(
+            version: "0.3.10",
+            date:    "2026-08-06",
+            title:   "UX improvements",
+            bullets: [
+                "Partial VPN now learns partial routes from DNS.",
+                "Better and more consistent naming.",
+                "Main window has better UX during scroll and editing profiles, field validation, better save feedback",
+                "A URL pasted is trimmed to the hostname.",
+                "An IP typed is parsed automatically into a network.",
+                "Asking for a 2FA code now opens velun in front.",
+                "Connect is highlighted when a connection is ready.",
+            ]
+        ),
+        ChangelogEntry(
             version: "0.3.9",
             date:    "2026-08-04",
             title:   "New icons",
             bullets: [
                 "New menu-bar icons.",
+                "Fixed connecting to AnyConnect servers that compress the tunnel, which could connect and then pass no traffic.",
             ]
         ),
         ChangelogEntry(

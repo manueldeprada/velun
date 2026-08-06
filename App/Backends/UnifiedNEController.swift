@@ -651,7 +651,7 @@ final class UnifiedNEController {
                 "velun needs your approval to install its network extension.\n\n" +
                 "Open System Settings → General → Login Items & Extensions. " +
                 "Scroll down to the \"Extensions\" section, click the ⓘ next to " +
-                "\"Network Extensions\" (the category — not the apps list above), " +
+                "\"Network Extensions\" (the category, not the apps list above), " +
                 "turn on velun, then click Done.\n\n" +
                 "Then click Connect again here. If you dismissed the macOS " +
                 "prompt, clicking Connect simply re-requests it.\n\n" +

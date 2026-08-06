@@ -28,6 +28,7 @@
 		AA0600B0000000000000001 /* SystemProfileImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400B0000000000000001 /* SystemProfileImporter.swift */; };
 		AA0600E1000000000000001 /* ManagedPolicyProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400E1000000000000001 /* ManagedPolicyProbe.swift */; };
 		AA0600B1000000000000001 /* ServerAddress.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400B1000000000000001 /* ServerAddress.swift */; };
+		AA060C02000000000000001 /* RouteFieldMerge.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040C02000000000000001 /* RouteFieldMerge.swift */; };
 		AA0600B2000000000000001 /* SSOWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400B2000000000000001 /* SSOWebView.swift */; };
 		AA0600B3000000000000001 /* DomainRouteResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0400B3000000000000001 /* DomainRouteResolver.swift */; };
 		AA060B01000000000000001 /* IPv4Packet.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA040B01000000000000001 /* IPv4Packet.swift */; };
@@ -131,6 +132,7 @@
 		AA0400B0000000000000001 /* SystemProfileImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemProfileImporter.swift; sourceTree = "<group>"; };
 		AA0400E1000000000000001 /* ManagedPolicyProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ManagedPolicyProbe.swift; sourceTree = "<group>"; };
 		AA0400B1000000000000001 /* ServerAddress.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerAddress.swift; sourceTree = "<group>"; };
+		AA040C02000000000000001 /* RouteFieldMerge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteFieldMerge.swift; sourceTree = "<group>"; };
 		AA0400B2000000000000001 /* SSOWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSOWebView.swift; sourceTree = "<group>"; };
 		AA0400B3000000000000001 /* DomainRouteResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainRouteResolver.swift; sourceTree = "<group>"; };
 		AA040B01000000000000001 /* IPv4Packet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IPv4Packet.swift; sourceTree = "<group>"; };
@@ -236,6 +238,7 @@
 				AA0400B0000000000000001 /* SystemProfileImporter.swift */,
 				AA0400E1000000000000001 /* ManagedPolicyProbe.swift */,
 				AA0400B1000000000000001 /* ServerAddress.swift */,
+				AA040C02000000000000001 /* RouteFieldMerge.swift */,
 				AA0400B2000000000000001 /* SSOWebView.swift */,
 				AA0400B3000000000000001 /* DomainRouteResolver.swift */,
 				AA0400A1000000000000001 /* UpdaterManager.swift */,
@@ -481,6 +484,7 @@
 				AA0600B0000000000000001 /* SystemProfileImporter.swift in Sources */,
 				AA0600E1000000000000001 /* ManagedPolicyProbe.swift in Sources */,
 				AA0600B1000000000000001 /* ServerAddress.swift in Sources */,
+				AA060C02000000000000001 /* RouteFieldMerge.swift in Sources */,
 				AA0600B2000000000000001 /* SSOWebView.swift in Sources */,
 				AA0600B3000000000000001 /* DomainRouteResolver.swift in Sources */,
 				AA0600A0000000000000001 /* VPNConfig.swift in Sources */,
@@ -691,7 +695,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.3.9;
+				MARKETING_VERSION = 0.3.10;
 				OTHER_CODE_SIGN_FLAGS = "--timestamp";
 				PRODUCT_BUNDLE_IDENTIFIER = com.manueldeprada.velun;
 				PRODUCT_NAME = velun;
@@ -728,7 +732,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.3.9;
+				MARKETING_VERSION = 0.3.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.manueldeprada.velun;
 				PRODUCT_NAME = velun;
 				PROVISIONING_PROFILE_SPECIFIER = "velun Developer ID";

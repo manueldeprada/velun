@@ -233,6 +233,11 @@ class CSTPTunnel {
                     case .disconnect, .termServer:
                         self.inbound.fail(AnyConnectError.tunnelConnectFailed("Server disconnected (type \(type))"))
                         return
+                    case .compressed:
+                        self.inbound.fail(AnyConnectError.protocolError(
+                            "Server sent a compressed packet, which velun did not "
+                            + "advertise support for. Turn off compression on the gateway."))
+                        return
                     default:
                         break
                     }
@@ -297,7 +302,6 @@ class CSTPTunnel {
             "Cookie: webvpn=\(cookie)",
             "X-CSTP-Version: 1",
             "X-CSTP-Hostname: \(hostname)",
-            "X-CSTP-Accept-Encoding: lzs",
             "X-CSTP-Base-MTU: 1500",
             "X-CSTP-Address-Type: IPv4,IPv6",
             "X-DTLS-Master-Secret: \(masterSecretHex ?? randomHex(48))",
@@ -325,6 +329,7 @@ class CSTPTunnel {
         var sid: Data?, cipher: DTLSCipherSuite?
         var port = 443, mtu = 1300
         var keepalive: TimeInterval = 20, dpd: TimeInterval = 30
+        var compressed = false
         for line in response.components(separatedBy: "\r\n").dropFirst() {
             let kv = line.split(separator: ":", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
             guard kv.count == 2 else { continue }
@@ -335,8 +340,15 @@ class CSTPTunnel {
             case "X-DTLS-MTU":           mtu = Int(kv[1]) ?? mtu
             case "X-DTLS-KEEPALIVE":     keepalive = TimeInterval(kv[1]) ?? keepalive
             case "X-DTLS-DPD":           dpd = TimeInterval(kv[1]) ?? dpd
+            case "X-DTLS-CONTENT-ENCODING":
+                let enc = kv[1].lowercased()
+                compressed = !enc.isEmpty && enc != "none" && enc != "identity"
             default: break
             }
+        }
+        if compressed {
+            log.notice("server offers a compressed DTLS channel — staying on TLS")
+            return nil
         }
         guard let sid, sid.count >= 16, let cipher else { return nil }
         return ParsedDTLS(sessionID: sid, cipher: cipher, port: port, mtu: mtu,
@@ -412,6 +424,14 @@ class CSTPTunnel {
                 prefix6 = parts.count == 2 ? (Int(parts[1]) ?? 0) : 0
             case "X-CSTP-SPLIT-INCLUDE-IP6":
                 splitInc6.append(val)
+            case "X-CSTP-CONTENT-ENCODING":
+                let enc = val.lowercased()
+                if !enc.isEmpty, enc != "none", enc != "identity" {
+                    throw AnyConnectError.protocolError(
+                        "This VPN server insists on compressing the tunnel (\(val)), "
+                        + "which velun doesn't support. Ask whoever runs the gateway to "
+                        + "turn off AnyConnect SSL compression for it.")
+                }
             default: break
             }
         }
