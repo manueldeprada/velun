@@ -14,6 +14,14 @@ enum Changelog {
     /// Append new entries here when shipping a release. Most recent at the top.
     static let entries: [ChangelogEntry] = [
         ChangelogEntry(
+            version: "0.3.11",
+            date:    "2026-09-14",
+            title:   "Login-item fixes",
+            bullets: [
+                "Launching at login before the Keychain unlocks no longer needs a relaunch: velun waits for it, then restores the last session.",
+            ]
+        ),
+        ChangelogEntry(
             version: "0.3.10",
             date:    "2026-08-06",
             title:   "UX improvements",

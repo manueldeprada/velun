@@ -148,6 +148,7 @@ class MenuBarManager {
         pendingShowTask?.cancel()
         pendingShowTask = nil
         guard !popover.isShown else { return }
+        Task { @MainActor in VPNManager.shared.retryKeychainLoads() }
         NSApp.activate(ignoringOtherApps: true)
 
         if statusButtonMenuBarFrame != nil, let btn = statusItem.button {

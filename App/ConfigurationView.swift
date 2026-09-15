@@ -915,6 +915,11 @@ struct ProfileCard: View {
                                 .frame(maxHeight: 280)
                             }
                     }
+                    if keychainLoadFailed {
+                        Button("Retry now") { vpn.retryKeychainLoads() }
+                            .buttonStyle(.borderless)
+                            .controlSize(.small)
+                    }
                     if connectionLost && status == .disconnected {
                         Button("Reconnect") { vpn.connect(profile) }
                             .buttonStyle(.borderless)
@@ -967,8 +972,17 @@ struct ProfileCard: View {
 
     private var alertTitle: String {
         if errorMsg != nil       { return "Connection failed" }
-        if keychainLoadFailed    { return "Saved credentials unavailable" }
+        if keychainLoadFailed    { return vpn.keychainLocked ? "Waiting for the system Keychain" : "Saved credentials unavailable" }
         return "Connection lost"
+    }
+
+    private var keychainSummary: String {
+        if vpn.keychainLocked {
+            return "The Keychain hasn't unlocked yet, so the saved password can't be read. velun retries automatically and restores the session once it does."
+        }
+        let code: String
+        if case .other(let status)? = vpn.keychainReadFailure { code = " (OSStatus \(status))" } else { code = "" }
+        return "velun couldn't read this profile's password from the system Keychain\(code). Expand the profile and enter the password again."
     }
 
     private var alertSummary: String? {
@@ -978,7 +992,7 @@ struct ProfileCard: View {
                       .map(String.init)
         }
         if keychainLoadFailed {
-            return "velun couldn't read this profile's password from the system Keychain at startup. Quit and relaunch velun to retry."
+            return keychainSummary
         }
         if connectionLost {
             return "The VPN tunnel dropped. The link may be down or the server may have closed the session."
@@ -1159,9 +1173,7 @@ struct ProfileCard: View {
 
     private var canConnectReason: String? {
         if canConnect { return nil }
-        if keychainLoadFailed {
-            return "velun couldn't read this profile's saved password from the system Keychain at startup. Quit and relaunch velun."
-        }
+        if keychainLoadFailed { return keychainSummary }
         let cfg = isExpanded ? draft.config : profile.config
         switch cfg {
         case .sslVPN(let oc):

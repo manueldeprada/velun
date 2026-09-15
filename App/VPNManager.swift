@@ -1,4 +1,5 @@
 import Foundation
+import AppKit
 import Combine
 import Darwin
 import OSLog
@@ -64,6 +65,11 @@ class VPNManager: ObservableObject {
     private var pendingAutoconnect: Set<UUID> = []
 
     @Published private(set) var keychainLoadFailures: Set<UUID> = []
+    @Published private(set) var keychainReadFailure: KeychainHelper.ReadFailure?
+    var keychainLocked: Bool { keychainReadFailure == .locked }
+    private var keychainRetryTask: Task<Void, Never>?
+    private var keychainUnlockObservers: [(NotificationCenter, NSObjectProtocol)] = []
+    private var deferredAutoconnect: Set<UUID> = []
 
     private var backends:      [UUID: any VPNBackend]    = [:]
     private var statusTasks:   [UUID: Task<Void, Never>] = [:]
@@ -754,7 +760,14 @@ class VPNManager: ObservableObject {
     func runAutoconnect() {
         defer { pendingAutoconnect.removeAll() }
         guard autoreconnectEnabled else { return }
-        let toConnect = profiles.filter { pendingAutoconnect.contains($0.id) }
+        deferredAutoconnect = pendingAutoconnect.intersection(keychainLoadFailures)
+        if !deferredAutoconnect.isEmpty {
+            logger.info("autoconnect: deferring \(self.deferredAutoconnect.count) profile(s) until the keychain is readable")
+        }
+        connectInOrder(profiles.filter { pendingAutoconnect.contains($0.id) && !keychainLoadFailures.contains($0.id) })
+    }
+
+    private func connectInOrder(_ toConnect: [VPNProfile]) {
         let sorted = toConnect.enumerated().sorted { (a, b) -> Bool in
             let aFull = self.currentRoutingMode(for: a.element).0 == .full
             let bFull = self.currentRoutingMode(for: b.element).0 == .full
@@ -928,27 +941,93 @@ class VPNManager: ObservableObject {
         for i in profiles.indices where profiles[i].normalizeServerAddress() { healedAny = true }
 
         for i in profiles.indices {
-            let id = profiles[i].id
-            switch profiles[i].config {
-            case .sslVPN(var oc):
-                let pw   = KeychainHelper.loadPassword(for: id)
-                let totp = KeychainHelper.loadTOTP    (for: id)
-                oc.password   = pw   ?? ""
-                oc.totpSecret = totp ?? ""
-                oc.clientCertP12      = KeychainHelper.loadClientCert(for: id) ?? ""
-                oc.clientCertPassword = KeychainHelper.loadClientCertPassword(for: id) ?? ""
-                if pw == nil { keychainLoadFailures.insert(id) }
-                profiles[i].config = .sslVPN(oc)
-            case .wireguard(var wg):
-                let conf = KeychainHelper.loadWireGuardConf(for: id)
-                wg.confText = conf ?? ""
-                if conf == nil { keychainLoadFailures.insert(id) }
-                profiles[i].config = .wireguard(wg)
-            }
+            if !loadSecrets(at: i) { keychainLoadFailures.insert(profiles[i].id) }
         }
         if !keychainLoadFailures.isEmpty {
-            logger.error("Keychain read failed for \(self.keychainLoadFailures.count) profile(s) at startup — Connect buttons will stay disabled until the user relaunches")
+            logger.error("Keychain read failed for \(self.keychainLoadFailures.count) profile(s) at startup (\(String(describing: self.keychainReadFailure), privacy: .public))")
+            startKeychainRetry()
         }
         if healedAny { persist() }
+    }
+
+    private func loadSecrets(at i: Int) -> Bool {
+        let id = profiles[i].id
+        switch profiles[i].config {
+        case .sslVPN(var oc):
+            let pw = KeychainHelper.loadPassword(for: id)
+            if pw == nil, let failure = KeychainHelper.lastReadFailure {
+                keychainReadFailure = failure
+                return false
+            }
+            oc.password   = pw ?? ""
+            oc.totpSecret = KeychainHelper.loadTOTP(for: id) ?? ""
+            oc.clientCertP12      = KeychainHelper.loadClientCert(for: id) ?? ""
+            oc.clientCertPassword = KeychainHelper.loadClientCertPassword(for: id) ?? ""
+            profiles[i].config = .sslVPN(oc)
+        case .wireguard(var wg):
+            let conf = KeychainHelper.loadWireGuardConf(for: id)
+            if conf == nil, let failure = KeychainHelper.lastReadFailure {
+                keychainReadFailure = failure
+                return false
+            }
+            wg.confText = conf ?? ""
+            profiles[i].config = .wireguard(wg)
+        }
+        return true
+    }
+
+    @discardableResult
+    func retryKeychainLoads() -> Bool {
+        guard !keychainLoadFailures.isEmpty else { stopKeychainRetry(); return true }
+        var recovered: [UUID] = []
+        for i in profiles.indices where keychainLoadFailures.contains(profiles[i].id) {
+            if loadSecrets(at: i) { recovered.append(profiles[i].id) }
+        }
+        guard !recovered.isEmpty else { return false }
+        keychainLoadFailures.subtract(recovered)
+        logger.info("keychain: recovered secrets for \(recovered.count) profile(s), \(self.keychainLoadFailures.count) still unreadable")
+        if keychainLoadFailures.isEmpty {
+            keychainReadFailure = nil
+            stopKeychainRetry()
+            AboutScreenManager.shared.reloadFromKeychain()
+        }
+        let restore = deferredAutoconnect.intersection(recovered)
+        deferredAutoconnect.subtract(restore)
+        if !restore.isEmpty, autoreconnectEnabled, AboutScreenManager.shared.isAccessGranted {
+            logger.info("autoconnect: keychain readable, restoring \(restore.count) deferred profile(s)")
+            connectInOrder(profiles.filter { restore.contains($0.id) })
+        }
+        return keychainLoadFailures.isEmpty
+    }
+
+    private func startKeychainRetry() {
+        guard keychainRetryTask == nil else { return }
+        keychainRetryTask = Task { @MainActor [weak self] in
+            var attempt = 0
+            while !Task.isCancelled {
+                let gap: UInt64 = attempt < 40 ? 3 : 10
+                try? await Task.sleep(nanoseconds: gap * 1_000_000_000)
+                guard let self, !Task.isCancelled else { return }
+                attempt += 1
+                if self.retryKeychainLoads() { return }
+            }
+        }
+        let triggers: [(NotificationCenter, Notification.Name)] = [
+            (DistributedNotificationCenter.default(), Notification.Name("com.apple.screenIsUnlocked")),
+            (NSWorkspace.shared.notificationCenter, NSWorkspace.sessionDidBecomeActiveNotification),
+        ]
+        for (center, name) in triggers {
+            let token = center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                Task { @MainActor in self?.retryKeychainLoads() }
+            }
+            keychainUnlockObservers.append((center, token))
+        }
+    }
+
+    private func stopKeychainRetry() {
+        keychainRetryTask?.cancel()
+        keychainRetryTask = nil
+        for (center, token) in keychainUnlockObservers { center.removeObserver(token) }
+        keychainUnlockObservers.removeAll()
     }
 }

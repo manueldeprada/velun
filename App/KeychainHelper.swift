@@ -7,6 +7,12 @@ private let keychainLog = Logger(subsystem: "com.manueldeprada.velun", category:
 enum KeychainHelper {
     private static let service = "com.manueldeprada.velun"
 
+    enum ReadFailure: Equatable {
+        case locked
+        case other(OSStatus)
+    }
+    private(set) static var lastReadFailure: ReadFailure?
+
     // MARK: – Per-profile secrets
 
     static func savePassword(_ value: String, for id: UUID) {
@@ -84,12 +90,14 @@ enum KeychainHelper {
         query[kSecMatchLimit] = kSecMatchLimitOne
         var ref: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &ref)
+        lastReadFailure = nil
         if status == errSecSuccess,
            let data = ref as? Data,
            let s = String(data: data, encoding: .utf8) {
             return s
         }
         if status != errSecItemNotFound {
+            lastReadFailure = status == errSecInteractionNotAllowed ? .locked : .other(status)
             keychainLog.error("SecItemCopyMatching failed for \(account, privacy: .public): OSStatus \(status)")
         }
         var legacy: [CFString: Any] = [
@@ -104,6 +112,7 @@ enum KeychainHelper {
         guard SecItemCopyMatching(legacy as CFDictionary, &legacyRef) == errSecSuccess,
               let data = legacyRef as? Data,
               let s = String(data: data, encoding: .utf8) else { return nil }
+        lastReadFailure = nil
         set(s, account: account)
         legacy.removeValue(forKey: kSecReturnData)
         legacy.removeValue(forKey: kSecMatchLimit)

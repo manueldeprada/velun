@@ -66,6 +66,16 @@ final class AboutScreenManager: ObservableObject {
         }
     }
 
+    func reloadFromKeychain() {
+        guard license == nil else { return }
+        license = loadLicense()
+        guard license != nil else { return }
+        lastVerifiedAt = resolveLastVerifiedAt()
+        licenseLog.info("License loaded after the keychain became readable")
+        enforceAccessGate()
+        Task { @MainActor [weak self] in await self?.verifyHeartbeat() }
+    }
+
     func enforceAccessGate() {
         let granted = isAccessGranted
         if lastAccessGranted && !granted {
