@@ -8,10 +8,14 @@ final class NetworkPathWatcher {
     private let monitor = NWPathMonitor()
     private let queue   = DispatchQueue(label: "com.manueldeprada.velun.NetworkPath")
     private var wasSatisfied = false
+    private var lastReported: Bool?
     private let onPathRestored: @Sendable () -> Void
+    private let onAvailabilityChanged: @Sendable (Bool) -> Void
 
-    init(onPathRestored: @escaping @Sendable () -> Void) {
+    init(onPathRestored: @escaping @Sendable () -> Void,
+         onAvailabilityChanged: @escaping @Sendable (Bool) -> Void = { _ in }) {
         self.onPathRestored = onPathRestored
+        self.onAvailabilityChanged = onAvailabilityChanged
         monitor.pathUpdateHandler = { [weak self] path in
             guard let self else { return }
             let nowSatisfied = path.status == .satisfied
@@ -21,6 +25,10 @@ final class NetworkPathWatcher {
                 self.onPathRestored()
             } else if self.wasSatisfied, !nowSatisfied {
                 log.info("network path lost: status=\(String(describing: path.status), privacy: .public)")
+            }
+            if self.lastReported != nowSatisfied {
+                self.lastReported = nowSatisfied
+                self.onAvailabilityChanged(nowSatisfied)
             }
             self.wasSatisfied = nowSatisfied
         }

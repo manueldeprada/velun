@@ -1115,7 +1115,7 @@ struct ProfileCard: View {
     private var dotColor: Color {
         switch status {
         case .connected:                              return .green
-        case .connecting,.disconnecting,.reconnecting: return .yellow
+        case .connecting,.disconnecting,.reconnecting,.waitingForNetwork: return .yellow
         case .failed:                                 return .red
         case .disconnected:
             if errorMsg != nil       { return .red }

@@ -628,12 +628,20 @@ class VPNManager: ObservableObject {
     var anyActive:    Bool { statuses.values.contains(where: { $0.isActive }) }
 
     func status(for profile: VPNProfile) -> ConnectionStatus {
-        statuses[profile.id] ?? .disconnected
+        displayStatus(statuses[profile.id] ?? .disconnected)
+    }
+
+    func displayStatus(_ s: ConnectionStatus, networkAvailable: Bool? = nil) -> ConnectionStatus {
+        if !(networkAvailable ?? self.networkAvailable), s == .connecting || s == .reconnecting { return .waitingForNetwork }
+        return s
     }
 
     // MARK: – Private
 
     private var networkWatcher: NetworkPathWatcher?
+
+    /// False while the system reports no usable network path.
+    @Published private(set) var networkAvailable = true
 
     private init() {
         autoreconnectEnabled = UserDefaults.standard.object(forKey: Self.autoreconnectKey) as? Bool ?? false
@@ -648,11 +656,15 @@ class VPNManager: ObservableObject {
 
     func startNetworkPathWatcher() {
         guard networkWatcher == nil else { return }
-        networkWatcher = NetworkPathWatcher { [weak self] in
+        networkWatcher = NetworkPathWatcher(onPathRestored: { [weak self] in
             Task { @MainActor [weak self] in
                 self?.autoReconnectAfterNetworkRestore()
             }
-        }
+        }, onAvailabilityChanged: { [weak self] up in
+            Task { @MainActor [weak self] in
+                self?.networkAvailable = up
+            }
+        })
         networkWatcher?.start()
     }
 

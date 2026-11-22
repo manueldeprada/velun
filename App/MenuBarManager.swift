@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import OSLog
 import SwiftUI
 
@@ -17,6 +18,12 @@ class MenuBarManager {
     /// Lazily created; see `fallbackAnchorView()`.
     private var fallbackAnchorWindow: NSWindow?
     private var promptedForMFA: Set<UUID> = []
+    private var iconSubscription: AnyCancellable?
+    private var iconRefreshScheduled = false
+    private var renderedIcon: IconState?
+
+    private enum Glyph: String { case connecting, waiting, connected, failed, idle }
+    private struct IconState: Equatable { let glyph: Glyph; let count: Int }
 
     private static let statusButtonWaitSeconds: TimeInterval = 3.0
     private static let statusButtonPollNanoseconds: UInt64 = 50_000_000
@@ -43,11 +50,9 @@ class MenuBarManager {
             btn.target = self
         }
 
-        Task { @MainActor [weak self] in
-            for await statuses in VPNManager.shared.$statuses.values {
-                self?.updateIcon(statuses)
-            }
-        }
+        iconSubscription = VPNManager.shared.objectWillChange
+            .sink { [weak self] _ in self?.scheduleIconRefresh() }
+        scheduleIconRefresh()
 
         Task { @MainActor [weak self] in
             for await challenges in VPNManager.shared.$mfaChallenges.values {
@@ -207,20 +212,48 @@ class MenuBarManager {
         anchorMoveObserver = nil
     }
 
-    private func updateIcon(_ statuses: [UUID: ConnectionStatus]) {
-        let connected = statuses.values.filter { $0 == .connected }.count
-        let transitional = statuses.values.contains {
-            $0 == .connecting || $0 == .reconnecting || $0 == .disconnecting
+    /// Coalesce a burst of changes into one render on the next main-actor turn.
+    private func scheduleIconRefresh() {
+        guard !iconRefreshScheduled else { return }
+        iconRefreshScheduled = true
+        Task { @MainActor [weak self] in
+            self?.iconRefreshScheduled = false
+            self?.refreshIcon()
         }
-        let base: NSImage?
+    }
+
+    @MainActor private func refreshIcon() {
+        let vpn = VPNManager.shared
+        let statuses = vpn.profiles.map { ($0, vpn.status(for: $0)) }
+        let connected = statuses.filter { $0.1 == .connected }.count
+        let transitional = statuses.contains {
+            $0.1 == .connecting || $0.1 == .reconnecting || $0.1 == .disconnecting
+        }
+        let waiting = statuses.contains { $0.1 == .waitingForNetwork }
+        let glyph: Glyph
         if transitional {
-            base = Self.templateIcon(named: "connecting") ?? symbolImage("ellipsis.circle")
+            glyph = .connecting
+        } else if waiting {
+            glyph = .waiting
         } else if connected > 0 {
-            base = Self.templateIcon(named: "connected") ?? symbolImage("arrow.up.arrow.down.circle.fill")
-        } else if statuses.values.contains(where: { if case .failed = $0 { return true }; return false }) {
-            base = symbolImage("xmark.circle")
+            glyph = .connected
+        } else if statuses.contains(where: { if case .failed = $0.1 { return true }; return false }) {
+            glyph = .failed
         } else {
-            base = Self.templateIcon(named: "disconnected") ?? symbolImage("arrow.up.arrow.down.circle")
+            glyph = .idle
+        }
+        let state = IconState(glyph: glyph, count: connected)
+        guard state != renderedIcon else { return }
+        renderedIcon = state
+        log.notice("icon: \(glyph.rawValue, privacy: .public) [\(statuses.map { "\($0.0.name)=\($0.1.label)" }.joined(separator: ", "), privacy: .public)]")
+
+        let base: NSImage?
+        switch glyph {
+        case .connecting: base = Self.templateIcon(named: "connecting") ?? symbolImage("ellipsis.circle")
+        case .waiting:    base = Self.templateIcon(named: "waiting") ?? symbolImage("exclamationmark.circle")
+        case .connected:  base = Self.templateIcon(named: "connected") ?? symbolImage("arrow.up.arrow.down.circle.fill")
+        case .failed:     base = symbolImage("xmark.circle")
+        case .idle:       base = Self.templateIcon(named: "disconnected") ?? symbolImage("arrow.up.arrow.down.circle")
         }
         statusItem.button?.image = badgedImage(base: base, count: connected)
     }

@@ -10,13 +10,14 @@ enum ConnectionStatus: Equatable {
     case connected
     case disconnecting
     case reconnecting   // transitional state during full/partial tunnel switch
+    case waitingForNetwork
     case failed(String)
 
     static func == (lhs: Self, rhs: Self) -> Bool {
         switch (lhs, rhs) {
         case (.disconnected,.disconnected),(.connecting,.connecting),
              (.connected,.connected),(.disconnecting,.disconnecting),
-             (.reconnecting,.reconnecting): return true
+             (.reconnecting,.reconnecting),(.waitingForNetwork,.waitingForNetwork): return true
         case (.failed(let a),.failed(let b)): return a == b
         default: return false
         }
@@ -34,6 +35,7 @@ enum ConnectionStatus: Equatable {
 
     var isActive: Bool {
         self == .connected || self == .connecting || self == .disconnecting || self == .reconnecting
+        || self == .waitingForNetwork
     }
     var canDisconnect: Bool {
         if case .disconnected = self { return false }; return true
@@ -46,13 +48,14 @@ enum ConnectionStatus: Equatable {
         case .connected:      return "Connected"
         case .disconnecting:  return "Disconnecting…"
         case .reconnecting:   return "Reconnecting…"
+        case .waitingForNetwork: return "Waiting for network…"
         case .failed(let m):  return "Failed: \(m)"
         }
     }
     var color: String {
         switch self {
         case .connected:                                      return "green"
-        case .connecting,.disconnecting,.reconnecting:        return "yellow"
+        case .connecting,.disconnecting,.reconnecting,.waitingForNetwork: return "yellow"
         case .failed:                                         return "red"
         case .disconnected:                                   return "secondary"
         }

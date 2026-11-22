@@ -25,7 +25,7 @@ final class StatusBroadcaster {
         // Snapshot whenever any of the inputs change.
         Publishers.CombineLatest3(
             vpn.$profiles,
-            vpn.$statuses,
+            vpn.$statuses.combineLatest(vpn.$networkAvailable),
             vpn.$errors
         )
         .combineLatest(vpn.$appliedRoutes)
@@ -42,7 +42,7 @@ final class StatusBroadcaster {
             var d: [String: Any] = [
                 "id":     p.id.uuidString,
                 "name":   p.name,
-                "status": (vpn.statuses[p.id] ?? .disconnected).cliRawValue,
+                "status": vpn.displayStatus(vpn.statuses[p.id] ?? .disconnected).cliRawValue,
             ]
             if let err = vpn.errors[p.id] { d["error"] = err }
             if let routes = vpn.appliedRoutes[p.id] {
@@ -76,6 +76,7 @@ private extension ConnectionStatus {
         case .connected:     return "connected"
         case .disconnecting: return "disconnecting"
         case .reconnecting:  return "reconnecting"
+        case .waitingForNetwork: return "waiting-for-network"
         case .failed:        return "failed"
         }
     }
