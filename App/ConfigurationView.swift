@@ -29,6 +29,10 @@ struct ConfigurationView: View {
         VStack(spacing: 0) {
             globalHeader
             Divider()
+            if let update = updater.pendingUpdate {
+                updateBanner(update)
+                Divider()
+            }
             if about.isAccessGranted {
                 if vpn.profiles.isEmpty {
                     welcomeView
@@ -291,6 +295,39 @@ struct ConfigurationView: View {
             .help("Export / Import tunnels")
         }
         .padding(8)
+    }
+
+    // MARK: – Update banner
+
+    private func updateBanner(_ update: UpdaterManager.PendingUpdate) -> some View {
+        let connected = vpn.statuses.values.contains(.connected)
+        let detail: String? = !update.downloaded ? nil
+            : !connected ? "Installs on its own while no connection is active."
+            : vpn.autoreconnectEnabled ? "Connections drop for a few seconds and reconnect."
+            : "Restarting disconnects your connections."
+        return HStack(spacing: 8) {
+            Image(systemName: "arrow.down.circle")
+                .font(.caption).foregroundStyle(.blue)
+                .frame(width: 18)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(update.downloaded
+                     ? "velun \(update.version) is ready to install"
+                     : "velun \(update.version) is available")
+                    .font(.caption).fontWeight(.medium)
+                if let detail {
+                    Text(detail)
+                        .font(.caption2).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            Spacer(minLength: 4)
+            Button(update.downloaded ? "Restart now" : "Update…") {
+                updater.installPendingUpdate()
+            }
+            .controlSize(.small)
+        }
+        .padding(.horizontal, 12).padding(.vertical, 8)
+        .background(Color.blue.opacity(0.08))
     }
 
     // MARK: – Trial banner

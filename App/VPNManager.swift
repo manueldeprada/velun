@@ -814,6 +814,21 @@ class VPNManager: ObservableObject {
         persistLastConnected()
     }
 
+    @Published private(set) var activeCommandRuns = 0
+    func commandRunStarted() { activeCommandRuns += 1 }
+    func commandRunEnded()   { activeCommandRuns -= 1 }
+
+    var isIdleForRelaunch: Bool {
+        let busy = statuses.values.contains { s in
+            if case .failed = s { return false }
+            return s != .disconnected
+        }
+        return !busy && connectsInFlight.isEmpty && connectionLost.isEmpty
+            && reconnectTasks.isEmpty && mfaChallenges.isEmpty
+            && ssoChallenges.isEmpty && deferredAutoconnect.isEmpty
+            && activeCommandRuns == 0
+    }
+
     private func ensureBackend(for profile: VPNProfile) -> any VPNBackend {
         if let b = backends[profile.id] { return b }
 

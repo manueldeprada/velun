@@ -14,6 +14,15 @@ enum Changelog {
     /// Append new entries here when shipping a release. Most recent at the top.
     static let entries: [ChangelogEntry] = [
         ChangelogEntry(
+            version: "0.3.14",
+            date:    "2026-11-23",
+            title:   "Updates and second displays",
+            bullets: [
+                "Downloaded updates install while no connection is active, or from the popover.",
+                "Fixed the popover pointing at the screen corner when opened from a second display.",
+            ]
+        ),
+        ChangelogEntry(
             version: "0.3.13",
             date:    "2026-11-20",
             title:   "Menu bar fixes",

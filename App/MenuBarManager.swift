@@ -15,6 +15,7 @@ class MenuBarManager {
     private var anchorMoveObserver: NSObjectProtocol?
     /// In-flight "wait for the slot, then show" task (see `showPopover`).
     private var pendingShowTask: Task<Void, Never>?
+    private var clickFollowTask: Task<Void, Never>?
     /// Lazily created; see `fallbackAnchorView()`.
     private var fallbackAnchorWindow: NSWindow?
     private var promptedForMFA: Set<UUID> = []
@@ -28,6 +29,7 @@ class MenuBarManager {
     private static let statusButtonWaitSeconds: TimeInterval = 3.0
     private static let statusButtonPollNanoseconds: UInt64 = 50_000_000
     private static let requiredStableSamples = 4
+    private static let clickFollowSeconds: TimeInterval = 1.5
 
     init() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
@@ -72,6 +74,14 @@ class MenuBarManager {
             forName: NSPopover.didCloseNotification, object: popover, queue: .main
         ) { [weak self] _ in
             self?.stopAnchorTracking()
+            self?.clickFollowTask?.cancel()
+            self?.clickFollowTask = nil
+            self?.fallbackAnchorWindow?.orderOut(nil)
+            // A quiet moment to install a downloaded update, if one waits.
+            Task { @MainActor in UpdaterManager.shared.scheduleIdleInstallCheck() }
+        }
+        Task { @MainActor [weak self] in
+            UpdaterManager.shared.isPopoverShown = { self?.popover.isShown ?? false }
         }
     }
 
@@ -79,7 +89,7 @@ class MenuBarManager {
         if popover.isShown {
             popover.performClose(nil)
         } else {
-            presentPopover()
+            presentPopover(clickedAt: NSEvent.mouseLocation)
         }
     }
 
@@ -149,17 +159,27 @@ class MenuBarManager {
         return "window=\(window.map { "\($0)" } ?? "nil") screens=[\(screens)]"
     }
 
-    private func presentPopover() {
+    private func statusButtonSlot(contains click: NSPoint?) -> Bool {
+        guard let frame = statusButtonMenuBarFrame else { return false }
+        guard let click else { return true }
+        return frame.insetBy(dx: -2, dy: -2).contains(click)
+    }
+
+    private func presentPopover(clickedAt click: NSPoint? = nil) {
         pendingShowTask?.cancel()
         pendingShowTask = nil
         guard !popover.isShown else { return }
         Task { @MainActor in VPNManager.shared.retryKeychainLoads() }
         NSApp.activate(ignoringOtherApps: true)
 
-        if statusButtonMenuBarFrame != nil, let btn = statusItem.button {
+        if statusButtonSlot(contains: click), let btn = statusItem.button {
             popover.show(relativeTo: btn.bounds, of: btn, preferredEdge: .minY)
-        } else if let anchor = fallbackAnchorView() {
+        } else if let anchor = fallbackAnchorView(under: click) {
             popover.show(relativeTo: anchor.bounds, of: anchor, preferredEdge: .minY)
+            if let click {
+                log.notice("Icon clicked at \(NSStringFromPoint(click), privacy: .public) but the button is not there; anchoring at the click. \(self.statusButtonGeometryDescription, privacy: .public)")
+                followButtonToClick(click)
+            }
         } else {
             log.error("No anchor available for the popover; not showing")
             return
@@ -167,13 +187,33 @@ class MenuBarManager {
         startAnchorTracking()
     }
 
-    private func fallbackAnchorView() -> NSView? {
-        let mouse = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { $0.frame.contains(mouse) }
+    private func followButtonToClick(_ click: NSPoint) {
+        clickFollowTask?.cancel()
+        clickFollowTask = Task { @MainActor [weak self] in
+            let start = Date()
+            while Date().timeIntervalSince(start) < Self.clickFollowSeconds {
+                try? await Task.sleep(nanoseconds: Self.statusButtonPollNanoseconds)
+                guard let self, !Task.isCancelled, self.popover.isShown else { return }
+                if self.statusButtonSlot(contains: click), let btn = self.statusItem.button {
+                    self.popover.show(relativeTo: btn.bounds, of: btn, preferredEdge: .minY)
+                    self.fallbackAnchorWindow?.orderOut(nil)
+                    log.notice("Button reached the click after \(Int(Date().timeIntervalSince(start) * 1000), privacy: .public) ms; re-anchored")
+                    return
+                }
+            }
+            guard let self, !Task.isCancelled else { return }
+            log.notice("Button never reached the click; keeping the click anchor. \(self.statusButtonGeometryDescription, privacy: .public)")
+        }
+    }
+
+    private func fallbackAnchorView(under click: NSPoint?) -> NSView? {
+        let mouse = click ?? NSEvent.mouseLocation
+        let screen = NSScreen.screens.first { $0.frame.insetBy(dx: 0, dy: -1).contains(mouse) }
             ?? NSScreen.main
             ?? NSScreen.screens.first
         guard let screen else { return nil }
-        let origin = NSPoint(x: screen.visibleFrame.maxX - 24, y: screen.visibleFrame.maxY)
+        let x = click?.x ?? screen.visibleFrame.maxX - 24
+        let origin = NSPoint(x: x, y: screen.visibleFrame.maxY)
         let rect = NSRect(origin: origin, size: NSSize(width: 1, height: 1))
 
         let window: NSWindow

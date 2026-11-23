@@ -92,9 +92,15 @@ struct CommandRunSheet: View {
         }
 
         isRunning = true
+        VPNManager.shared.commandRunStarted()
         let cmd = command  // capture
         Task {
-            defer { Task { @MainActor in isRunning = false } }
+            defer {
+                Task { @MainActor in
+                    isRunning = false
+                    VPNManager.shared.commandRunEnded()
+                }
+            }
             do {
                 let result = try await ScriptedRunner.run(
                     profile: profile,
